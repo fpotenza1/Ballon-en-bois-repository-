@@ -1,1 +1,9 @@
-{"cleanUrls":true}
+{
+  "cleanUrls": true,
+  "crons": [
+    {
+      "path": "/api/import-football",
+      "schedule": "0 6 * * *"
+    }
+  ]
+}
