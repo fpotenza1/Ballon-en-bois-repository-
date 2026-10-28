@@ -45,7 +45,58 @@ async function saveRows(table, rows, conflict) {
   }
 }
 
+
 async function getMatches(code) {
+  const maxAttempts = 4;
+  const url =
+    `https://api.football-data.org/v4/competitions/${code}/matches`;
+
+  for (let attempt = 1; attempt <= maxAttempts; attempt++) {
+    const response = await fetch(url, {
+      headers: {
+        "X-Auth-Token": process.env.FOOTBALL_DATA_API_KEY,
+      },
+    });
+
+    if (response.ok) {
+      return await response.json();
+    }
+
+    if (response.status === 429) {
+      if (attempt === maxAttempts) {
+        throw new Error(
+          `Football API ${code}: rate limit persisted after ${maxAttempts} attempts`
+        );
+      }
+
+      const retryAfter = response.headers.get("retry-after");
+      const seconds = Number(retryAfter);
+
+      // Use Retry-After if supplied; otherwise increase the wait.
+      const delayMs =
+        retryAfter !== null &&
+        Number.isFinite(seconds) &&
+        seconds >= 0
+          ? Math.max(seconds * 1000, 10000)
+          : 10000 * attempt;
+
+      console.warn(
+        `[Football Import] ${code}: HTTP 429. ` +
+        `Retrying attempt ${attempt + 1}/${maxAttempts} ` +
+        `after ${Math.ceil(delayMs / 1000)} seconds.`
+      );
+
+      await wait(delayMs);
+      continue;
+    }
+
+    throw new Error(
+      `Football API ${code}: HTTP ${response.status} ` +
+      (await response.text()).slice(0, 200)
+    );
+  }
+}
+
   const response = await fetch(
     `https://api.football-data.org/v4/competitions/${code}/matches`,
     {
