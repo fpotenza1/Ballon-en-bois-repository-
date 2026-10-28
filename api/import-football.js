@@ -180,12 +180,17 @@ module.exports = async function handler(req, res) {
         matches: matches.length,
       });
     } catch (error) {
-      results.push({
-        league: code,
-        status: "error",
-        message: error.message,
-      });
-    }
+  console.error(
+    `[Football Import] League ${code} failed:`,
+    error.message
+  );
+
+  results.push({
+    league: code,
+    status: "error",
+    message: error.message,
+  });
+}
 
     // Stay below the free API rate limit.
     if (code !== "PPL") await wait(7000);
