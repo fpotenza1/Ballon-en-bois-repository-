@@ -14,7 +14,7 @@ const wait = (ms) =>
 async function saveRows(table, rows, conflict) {
   if (!rows.length) return;
 
-  const url = process.env.SUPABASE_URL.replace(/\/$/, "");
+  const url = new URL(process.env.SUPABASE_URL).origin;
   const key =
     process.env.SUPABASE_SECRET_KEY ||
     process.env.SUPABASE_SERVICE_ROLE_KEY;
@@ -23,7 +23,7 @@ async function saveRows(table, rows, conflict) {
     const batch = rows.slice(i, i + 100);
 
     const response = await fetch(
-      `${url}/rest/v1/${table}?on_conflict=${conflict}`,
+      `${url}/rest/v1/${encodeURIComponent(table)}?on_conflict=${encodeURIComponent(conflict)}`,
       {
         method: "POST",
         headers: {
