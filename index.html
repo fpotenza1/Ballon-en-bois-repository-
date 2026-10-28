@@ -7,6 +7,109 @@
 <meta name="description" content="Ballon en Bois — independent satirical football awards, rankings, results and fixtures across nine competitions.">
 <title>Ballon en Bois — The Art of Disappointment</title>
 
+/* BALLON EN BOIS — WHITE & BLACK DESIGN */
+
+:root {
+  --paper: #ffffff;
+  --ink: #191a17;
+  --muted: #77776f;
+  --line: #e5e5e5;
+  --wood: #b18a60;
+  --light: #f7f7f7;
+}
+
+body,
+.top {
+  background: #ffffff;
+}
+
+.football-controls .control {
+  background: #191a17;
+  color: #ffffff;
+  border-color: #191a17;
+  min-width: 300px;
+}
+
+.football-tab {
+  background: #ffffff;
+  color: #191a17;
+  border: 1px solid #191a17;
+}
+
+.football-tab.active,
+.football-tab:hover {
+  background: #191a17;
+  color: #ffffff;
+}
+
+.football-list {
+  gap: 12px;
+}
+
+.football-match {
+  background: #191a17;
+  color: #ffffff;
+  border: 1px solid #191a17;
+  grid-template-columns:
+    110px minmax(0, 1fr) 90px minmax(0, 1fr);
+  gap: 18px;
+  padding: 22px 28px;
+}
+
+.football-team {
+  color: #ffffff;
+  font-size: 16px;
+}
+
+.football-score {
+  color: #d4ad80;
+  font-size: 28px;
+}
+
+.football-status {
+  color: #cccccc;
+  font-family: Arial, Helvetica, sans-serif;
+  font-size: 9px;
+  letter-spacing: 1.5px;
+}
+
+.football-date {
+  color: #bbbbbb;
+}
+
+.football-message {
+  background: #191a17;
+  color: #ffffff;
+  border-color: #191a17;
+}
+
+@media (max-width: 700px) {
+  .football-controls .control {
+    min-width: 0;
+    width: 100%;
+  }
+
+  .football-match {
+    grid-template-columns:
+      minmax(0, 1fr) 75px minmax(0, 1fr);
+    gap: 10px;
+    padding: 20px 14px;
+  }
+
+  .football-date {
+    grid-column: 1 / -1;
+    text-align: center;
+  }
+
+  .football-team {
+    font-size: 12px;
+  }
+
+  .football-score {
+    font-size: 22px;
+  }
+}
+
 <style>
 :root {
   --paper: #faf9f6;
