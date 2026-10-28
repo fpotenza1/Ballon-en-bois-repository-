@@ -1,39 +1,487 @@
-<!doctype html>
+
+<!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="utf-8">
+<meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<meta name="theme-color" content="#faf9f6">
-<meta name="description" content="Ballon en Bois — independent satirical football awards, rankings, results and fixtures across nine competitions.">
+<meta name="theme-color" content="#ffffff">
+<meta name="description" content="Ballon en Bois — independent satirical football awards, rankings, results and fixtures.">
 <title>Ballon en Bois — The Art of Disappointment</title>
 
-/* BALLON EN BOIS — WHITE & BLACK DESIGN */
-
+<style>
 :root {
   --paper: #ffffff;
   --ink: #191a17;
   --muted: #77776f;
   --line: #e5e5e5;
   --wood: #b18a60;
+  --gold: #d4ad80;
   --light: #f7f7f7;
 }
 
-body,
+* { box-sizing: border-box; }
+
+html { scroll-behavior: smooth; }
+
+body {
+  margin: 0;
+  background: var(--paper);
+  color: var(--ink);
+  font-family: Arial, Helvetica, sans-serif;
+  -webkit-font-smoothing: antialiased;
+}
+
+a { color: inherit; text-decoration: none; }
+button, select, input { font: inherit; }
+button { cursor: pointer; }
+
+.wrap {
+  width: min(1200px, calc(100% - 72px));
+  margin: auto;
+}
+
+/* HEADER */
+
 .top {
+  border-bottom: 1px solid var(--line);
   background: #ffffff;
+  position: sticky;
+  top: 0;
+  z-index: 10;
+}
+
+.nav {
+  min-height: 82px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 22px;
+}
+
+.brand {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+}
+
+.mark {
+  width: 35px;
+  height: 35px;
+  border: 2px solid var(--ink);
+  border-radius: 50%;
+  display: grid;
+  place-items: center;
+  font-size: 22px;
+  font-family: Georgia, serif;
+  color: var(--wood);
+}
+
+.brandname {
+  font-family: Georgia, serif;
+  letter-spacing: -.6px;
+  font-weight: bold;
+  font-size: 22px;
+}
+
+.brand small {
+  display: block;
+  font-size: 8px;
+  letter-spacing: 2.4px;
+  color: var(--wood);
+  margin-top: 3px;
+}
+
+.links {
+  display: flex;
+  gap: 24px;
+  align-items: center;
+}
+
+.links a {
+  font-size: 11px;
+  font-weight: bold;
+  letter-spacing: 1.3px;
+  text-transform: uppercase;
+  padding: 12px 0;
+}
+
+.links a.active {
+  border-bottom: 2px solid var(--wood);
+}
+
+.right {
+  font-size: 10px;
+  letter-spacing: 1px;
+  color: var(--muted);
+}
+
+.menu {
+  display: none;
+  border: 0;
+  background: transparent;
+  font-size: 23px;
+}
+
+/* TYPOGRAPHY */
+
+.eyebrow {
+  font-size: 11px;
+  letter-spacing: 3px;
+  text-transform: uppercase;
+  color: var(--wood);
+  font-weight: bold;
+}
+
+.sub {
+  color: var(--muted);
+  line-height: 1.7;
+  max-width: 680px;
+  font-size: 15px;
+}
+
+.section { padding: 78px 0; }
+
+.sectionhead {
+  display: flex;
+  align-items: end;
+  justify-content: space-between;
+  gap: 20px;
+  margin-bottom: 32px;
+}
+
+.section h2,
+.pagehead h1 {
+  font: normal clamp(38px, 5vw, 64px)/1.06 Georgia, serif;
+  letter-spacing: -2px;
+  margin: 10px 0;
+}
+
+.pagehead {
+  padding: 75px 0 40px;
+  border-bottom: 1px solid var(--line);
+}
+
+/* HOME */
+
+.hero {
+  padding: 102px 0 88px;
+  border-bottom: 1px solid var(--line);
+  display: grid;
+  grid-template-columns: 1.15fr .85fr;
+  align-items: center;
+  gap: 30px;
+}
+
+.hero h1 {
+  font: normal clamp(64px, 8vw, 126px)/.94 Georgia, serif;
+  letter-spacing: -6px;
+  margin: 25px 0;
+}
+
+.hero h1 em {
+  font-style: normal;
+  color: var(--wood);
+}
+
+.lead {
+  font: normal clamp(20px, 2.4vw, 30px)/1.35 Georgia, serif;
+  max-width: 500px;
+  margin: 0 0 35px;
+}
+
+.btn {
+  display: inline-block;
+  background: var(--ink);
+  color: white;
+  border: 1px solid var(--ink);
+  padding: 16px 24px;
+  font-size: 11px;
+  letter-spacing: 1.5px;
+  text-transform: uppercase;
+  font-weight: bold;
+}
+
+.btn:hover {
+  background: var(--wood);
+  border-color: var(--wood);
+}
+
+.btn.outline {
+  background: transparent;
+  color: var(--ink);
+}
+
+.btn.outline:hover {
+  background: var(--ink);
+  color: white;
+}
+
+.heroart {
+  min-height: 450px;
+  display: grid;
+  place-items: center;
+  position: relative;
+}
+
+.heroart:before {
+  content: "";
+  width: 76%;
+  aspect-ratio: 1;
+  border: 1px solid #d7d1c7;
+  border-radius: 50%;
+  position: absolute;
+}
+
+.heroart:after {
+  content: "EST. 2026";
+  position: absolute;
+  bottom: 2%;
+  font-size: 10px;
+  letter-spacing: 4px;
+  color: var(--muted);
+}
+
+.ball {
+  width: min(330px, 75%);
+  filter: drop-shadow(18px 25px 17px #0002);
+}
+
+.three {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 18px;
+}
+
+.tile {
+  border: 1px solid var(--line);
+  padding: 30px;
+  min-height: 245px;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  background: #ffffff;
+}
+
+.tile:hover { border-color: var(--wood); }
+
+.tile .num {
+  font: normal 14px Georgia, serif;
+  color: var(--wood);
+}
+
+.tile h3 {
+  font: normal 32px/1.1 Georgia, serif;
+  margin: 0 0 13px;
+}
+
+.tile p {
+  font-size: 13px;
+  color: var(--muted);
+  line-height: 1.6;
+  margin: 0;
+}
+
+.tile .arr {
+  font-size: 22px;
+  align-self: end;
+}
+
+.strip {
+  background: var(--light);
+  border-top: 1px solid var(--line);
+  border-bottom: 1px solid var(--line);
+  padding: 28px 0;
+}
+
+.strip .wrap {
+  display: flex;
+  justify-content: space-between;
+  gap: 22px;
+  flex-wrap: wrap;
+}
+
+.strip span {
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 1.6px;
+  font-weight: bold;
+}
+
+.textlink {
+  font-size: 11px;
+  letter-spacing: 1.4px;
+  text-transform: uppercase;
+  border-bottom: 1px solid var(--ink);
+  padding-bottom: 6px;
+  font-weight: bold;
+  white-space: nowrap;
+}
+
+/* NOMINEES AND RANKINGS */
+
+.toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  margin: 28px 0;
+}
+
+.control {
+  padding: 13px 16px;
+  border: 1px solid var(--line);
+  background: #ffffff;
+  color: var(--ink);
+  min-width: 180px;
+}
+
+.search {
+  flex: 1;
+  min-width: 210px;
+}
+
+.grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 16px;
+}
+
+.nominee {
+  border: 1px solid var(--line);
+  padding: 26px;
+  background: #ffffff;
+}
+
+.nominee .meta {
+  font-size: 10px;
+  text-transform: uppercase;
+  letter-spacing: 1.5px;
+  color: var(--wood);
+}
+
+.nominee h3 {
+  font: normal 30px Georgia, serif;
+  margin: 25px 0 6px;
+}
+
+.nominee .club {
+  color: var(--muted);
+  font-size: 13px;
+}
+
+.nominee .score {
+  display: flex;
+  justify-content: space-between;
+  border-top: 1px solid var(--line);
+  margin-top: 30px;
+  padding-top: 17px;
+  font-size: 12px;
+}
+
+.nominee .score b {
+  font: normal 28px Georgia, serif;
+  color: var(--wood);
+}
+
+.tablewrap {
+  overflow-x: auto;
+  border: 1px solid var(--line);
+  background: #ffffff;
+}
+
+table {
+  width: 100%;
+  border-collapse: collapse;
+  text-align: left;
+  min-width: 660px;
+}
+
+th {
+  font-size: 10px;
+  text-transform: uppercase;
+  letter-spacing: 1.5px;
+  color: var(--muted);
+  background: #f4f3ee;
+  padding: 18px 20px;
+}
+
+td {
+  padding: 22px 20px;
+  border-top: 1px solid var(--line);
+  font-size: 14px;
+}
+
+td:first-child {
+  font: normal 25px Georgia, serif;
+  color: var(--wood);
+}
+
+td strong { font-size: 15px; }
+
+td small {
+  display: block;
+  color: var(--muted);
+  margin-top: 5px;
+}
+
+.scorepill {
+  font-weight: bold;
+  color: var(--wood);
+}
+
+.note {
+  border-left: 2px solid var(--wood);
+  padding: 12px 18px;
+  color: var(--muted);
+  font-size: 13px;
+  line-height: 1.6;
+  margin: 28px 0;
+}
+
+.empty {
+  padding: 40px;
+  text-align: center;
+  color: var(--muted);
+  border: 1px solid var(--line);
+}
+
+/* FOOTBALL DATA — BLACK CARDS ON WHITE BACKGROUND */
+
+.football-controls {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  margin: 30px 0 20px;
 }
 
 .football-controls .control {
   background: #191a17;
   color: #ffffff;
-  border-color: #191a17;
+  border: 1px solid #191a17;
   min-width: 300px;
+  cursor: pointer;
+}
+
+.football-controls .control option {
+  background: #191a17;
+  color: #ffffff;
+}
+
+.football-tabs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-bottom: 25px;
 }
 
 .football-tab {
+  padding: 13px 22px;
+  border: 1px solid #191a17;
   background: #ffffff;
   color: #191a17;
-  border: 1px solid #191a17;
+  font-size: 11px;
+  font-weight: bold;
+  text-transform: uppercase;
+  letter-spacing: 1px;
 }
 
 .football-tab.active,
@@ -43,27 +491,46 @@ body,
 }
 
 .football-list {
+  display: grid;
   gap: 12px;
 }
+
+/* Match card */
 
 .football-match {
   background: #191a17;
   color: #ffffff;
   border: 1px solid #191a17;
+  display: grid;
   grid-template-columns:
-    110px minmax(0, 1fr) 90px minmax(0, 1fr);
-  gap: 18px;
-  padding: 22px 28px;
+    minmax(0, 1fr) 120px minmax(0, 1fr);
+  align-items: center;
+  gap: 22px;
+  padding: 23px 30px;
+  min-height: 125px;
+}
+
+.football-home {
+  text-align: right;
+}
+
+.football-away {
+  text-align: left;
 }
 
 .football-team {
   color: #ffffff;
-  font-size: 16px;
+  font-size: 17px;
+  font-weight: bold;
+  line-height: 1.4;
+  overflow-wrap: anywhere;
 }
 
 .football-score {
+  text-align: center;
+  font: normal 30px Georgia, serif;
   color: #d4ad80;
-  font-size: 28px;
+  white-space: nowrap;
 }
 
 .football-status {
@@ -71,16 +538,101 @@ body,
   font-family: Arial, Helvetica, sans-serif;
   font-size: 9px;
   letter-spacing: 1.5px;
+  text-transform: uppercase;
+  margin-top: 8px;
 }
 
-.football-date {
+.football-meta {
+  grid-column: 1 / -1;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 12px;
+  border-top: 1px solid #3b3b39;
+  padding-top: 13px;
+  margin-top: 2px;
   color: #bbbbbb;
+  font-size: 11px;
+  letter-spacing: .3px;
 }
 
 .football-message {
   background: #191a17;
   color: #ffffff;
-  border-color: #191a17;
+  border: 1px solid #191a17;
+  padding: 35px;
+  text-align: center;
+}
+
+/* FOOTER */
+
+.footer {
+  border-top: 1px solid var(--line);
+  padding: 38px 0 45px;
+  color: var(--muted);
+  font-size: 12px;
+}
+
+.footer .wrap {
+  display: flex;
+  justify-content: space-between;
+  gap: 18px;
+  flex-wrap: wrap;
+}
+
+/* RESPONSIVE */
+
+@media (max-width: 1050px) {
+  .right { display: none; }
+  .links { gap: 16px; }
+}
+
+@media (max-width: 800px) {
+  .wrap {
+    width: min(100% - 36px, 1200px);
+  }
+
+  .nav { min-height: 70px; }
+
+  .links {
+    display: none;
+    position: absolute;
+    top: 70px;
+    left: 0;
+    right: 0;
+    background: #ffffff;
+    padding: 20px 24px;
+    border-bottom: 1px solid var(--line);
+    flex-direction: column;
+    align-items: start;
+    gap: 10px;
+  }
+
+  .links.open { display: flex; }
+  .menu { display: block; }
+
+  .hero {
+    grid-template-columns: 1fr;
+    padding: 65px 0 45px;
+  }
+
+  .hero h1 { letter-spacing: -3px; }
+  .heroart { min-height: 300px; }
+  .ball { max-width: 240px; }
+
+  .three,
+  .grid {
+    grid-template-columns: 1fr;
+  }
+
+  .section { padding: 55px 0; }
+
+  .sectionhead {
+    align-items: start;
+    flex-direction: column;
+  }
+
+  .tile { min-height: 205px; }
 }
 
 @media (max-width: 700px) {
@@ -94,370 +646,26 @@ body,
       minmax(0, 1fr) 75px minmax(0, 1fr);
     gap: 10px;
     padding: 20px 14px;
+    min-height: 110px;
   }
 
-  .football-date {
-    grid-column: 1 / -1;
+  .football-team { font-size: 12px; }
+  .football-score { font-size: 22px; }
+
+  .football-meta {
+    font-size: 10px;
+    flex-wrap: wrap;
     text-align: center;
   }
-
-  .football-team {
-    font-size: 12px;
-  }
-
-  .football-score {
-    font-size: 22px;
-  }
-}
-
-<style>
-:root {
-  --paper: #faf9f6;
-  --ink: #191a17;
-  --muted: #77776f;
-  --line: #deddd7;
-  --wood: #916e50;
-  --light: #f0eee8;
-}
-
-* { box-sizing: border-box; }
-html { scroll-behavior: smooth; }
-body {
-  margin: 0;
-  background: var(--paper);
-  color: var(--ink);
-  font-family: Arial, Helvetica, sans-serif;
-  -webkit-font-smoothing: antialiased;
-}
-a { color: inherit; text-decoration: none; }
-button, select, input { font: inherit; }
-button { cursor: pointer; }
-
-.wrap {
-  width: min(1200px, calc(100% - 72px));
-  margin: auto;
-}
-
-.top {
-  border-bottom: 1px solid var(--line);
-  background: var(--paper);
-  position: sticky;
-  top: 0;
-  z-index: 10;
-}
-.nav {
-  min-height: 82px;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 22px;
-}
-.brand { display: flex; gap: 12px; align-items: center; }
-.mark {
-  width: 35px;
-  height: 35px;
-  border: 2px solid var(--ink);
-  border-radius: 50%;
-  display: grid;
-  place-items: center;
-  font-size: 22px;
-  font-family: Georgia, serif;
-  color: var(--wood);
-}
-.brandname {
-  font-family: Georgia, serif;
-  letter-spacing: -.6px;
-  font-weight: bold;
-  font-size: 22px;
-}
-.brand small {
-  display: block;
-  font-size: 8px;
-  letter-spacing: 2.4px;
-  color: var(--wood);
-  margin-top: 3px;
-}
-.links { display: flex; gap: 25px; align-items: center; }
-.links a {
-  font-size: 11px;
-  font-weight: bold;
-  letter-spacing: 1.3px;
-  text-transform: uppercase;
-  padding: 12px 0;
-}
-.links a.active { border-bottom: 2px solid var(--wood); }
-.right { font-size: 10px; letter-spacing: 1px; color: var(--muted); }
-.menu { display: none; border: 0; background: transparent; font-size: 23px; }
-
-.eyebrow {
-  font-size: 11px;
-  letter-spacing: 3px;
-  text-transform: uppercase;
-  color: var(--wood);
-  font-weight: bold;
-}
-.hero {
-  padding: 102px 0 88px;
-  border-bottom: 1px solid var(--line);
-  display: grid;
-  grid-template-columns: 1.15fr .85fr;
-  align-items: center;
-  gap: 30px;
-}
-.hero h1 {
-  font: normal clamp(64px, 8vw, 126px)/.94 Georgia, serif;
-  letter-spacing: -6px;
-  margin: 25px 0;
-}
-.hero h1 em { font-style: normal; color: var(--wood); }
-.lead {
-  font: normal clamp(20px, 2.4vw, 30px)/1.35 Georgia, serif;
-  max-width: 500px;
-  margin: 0 0 35px;
-}
-.sub {
-  color: var(--muted);
-  line-height: 1.7;
-  max-width: 680px;
-  font-size: 15px;
-}
-.btn {
-  display: inline-block;
-  background: var(--ink);
-  color: white;
-  border: 1px solid var(--ink);
-  padding: 16px 24px;
-  font-size: 11px;
-  letter-spacing: 1.5px;
-  text-transform: uppercase;
-  font-weight: bold;
-}
-.btn:hover { background: var(--wood); border-color: var(--wood); }
-.btn.outline { background: transparent; color: var(--ink); }
-.btn.outline:hover { background: var(--ink); color: white; }
-.heroart {
-  min-height: 450px;
-  display: grid;
-  place-items: center;
-  position: relative;
-}
-.heroart:before {
-  content: "";
-  width: 76%;
-  aspect-ratio: 1;
-  border: 1px solid #d7d1c7;
-  border-radius: 50%;
-  position: absolute;
-}
-.heroart:after {
-  content: "EST. 2026";
-  position: absolute;
-  bottom: 2%;
-  font-size: 10px;
-  letter-spacing: 4px;
-  color: var(--muted);
-}
-.ball { width: min(330px, 75%); filter: drop-shadow(18px 25px 17px #0002); }
-
-.section { padding: 78px 0; }
-.sectionhead {
-  display: flex;
-  align-items: end;
-  justify-content: space-between;
-  gap: 20px;
-  margin-bottom: 32px;
-}
-.section h2, .pagehead h1 {
-  font: normal clamp(38px, 5vw, 64px)/1.06 Georgia, serif;
-  letter-spacing: -2px;
-  margin: 10px 0;
-}
-.textlink {
-  font-size: 11px;
-  letter-spacing: 1.4px;
-  text-transform: uppercase;
-  border-bottom: 1px solid var(--ink);
-  padding-bottom: 6px;
-  font-weight: bold;
-  white-space: nowrap;
-}
-.three {
-  display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  gap: 18px;
-}
-.tile {
-  border: 1px solid var(--line);
-  padding: 30px;
-  min-height: 245px;
-  display: flex;
-  flex-direction: column;
-  justify-content: space-between;
-  background: white;
-}
-.tile:hover { border-color: var(--wood); }
-.tile .num { font: normal 14px Georgia, serif; color: var(--wood); }
-.tile h3 { font: normal 32px/1.1 Georgia, serif; margin: 0 0 13px; }
-.tile p { font-size: 13px; color: var(--muted); line-height: 1.6; margin: 0; }
-.tile .arr { font-size: 22px; align-self: end; }
-
-.strip {
-  background: var(--light);
-  border-top: 1px solid var(--line);
-  border-bottom: 1px solid var(--line);
-  padding: 28px 0;
-}
-.strip .wrap { display: flex; justify-content: space-between; gap: 22px; flex-wrap: wrap; }
-.strip span { font-size: 11px; text-transform: uppercase; letter-spacing: 1.6px; font-weight: bold; }
-
-.pagehead { padding: 75px 0 40px; border-bottom: 1px solid var(--line); }
-.toolbar { display: flex; flex-wrap: wrap; gap: 12px; margin: 28px 0; }
-.control {
-  padding: 13px 16px;
-  border: 1px solid var(--line);
-  background: white;
-  color: var(--ink);
-  min-width: 180px;
-}
-.search { flex: 1; min-width: 210px; }
-.grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; }
-.nominee { border: 1px solid var(--line); padding: 26px; background: white; }
-.nominee .meta { font-size: 10px; text-transform: uppercase; letter-spacing: 1.5px; color: var(--wood); }
-.nominee h3 { font: normal 30px Georgia, serif; margin: 25px 0 6px; }
-.nominee .club { color: var(--muted); font-size: 13px; }
-.nominee .score {
-  display: flex;
-  justify-content: space-between;
-  border-top: 1px solid var(--line);
-  margin-top: 30px;
-  padding-top: 17px;
-  font-size: 12px;
-}
-.nominee .score b { font: normal 28px Georgia, serif; color: var(--wood); }
-
-.tablewrap { overflow-x: auto; border: 1px solid var(--line); background: white; }
-table { width: 100%; border-collapse: collapse; text-align: left; min-width: 660px; }
-th {
-  font-size: 10px;
-  text-transform: uppercase;
-  letter-spacing: 1.5px;
-  color: var(--muted);
-  background: #f4f3ee;
-  padding: 18px 20px;
-}
-td { padding: 22px 20px; border-top: 1px solid var(--line); font-size: 14px; }
-td:first-child { font: normal 25px Georgia, serif; color: var(--wood); }
-td strong { font-size: 15px; }
-td small { display: block; color: var(--muted); margin-top: 5px; }
-.scorepill { font-weight: bold; color: var(--wood); }
-.note {
-  border-left: 2px solid var(--wood);
-  padding: 12px 18px;
-  color: var(--muted);
-  font-size: 13px;
-  line-height: 1.6;
-  margin: 28px 0;
-}
-.empty { padding: 40px; text-align: center; color: var(--muted); border: 1px solid var(--line); }
-.footer { border-top: 1px solid var(--line); padding: 38px 0 45px; color: var(--muted); font-size: 12px; }
-.footer .wrap { display: flex; justify-content: space-between; gap: 18px; flex-wrap: wrap; }
-
-/* Live football data */
-.football-controls { display: flex; flex-wrap: wrap; gap: 12px; margin: 30px 0 20px; }
-.football-tabs { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 25px; }
-.football-tab {
-  padding: 12px 20px;
-  border: 1px solid var(--line);
-  background: transparent;
-  color: var(--ink);
-  font-size: 11px;
-  font-weight: bold;
-  text-transform: uppercase;
-  letter-spacing: 1px;
-}
-.football-tab.active { background: var(--ink); border-color: var(--ink); color: white; }
-.football-list { display: grid; gap: 12px; }
-.football-match {
-  display: grid;
-  grid-template-columns: 120px minmax(0,1fr) 90px minmax(0,1fr);
-  align-items: center;
-  gap: 20px;
-  padding: 23px;
-  background: white;
-  border: 1px solid var(--line);
-}
-.football-date { color: var(--muted); font-size: 12px; }
-.football-home { text-align: right; }
-.football-away { text-align: left; }
-.football-team { font-size: 15px; font-weight: bold; overflow-wrap: anywhere; }
-.football-score {
-  text-align: center;
-  font: normal 25px Georgia, serif;
-  color: var(--wood);
-  white-space: nowrap;
-}
-.football-status {
-  font-size: 10px;
-  text-transform: uppercase;
-  letter-spacing: 1.5px;
-  color: var(--muted);
-  margin-top: 8px;
-}
-.football-message {
-  padding: 35px;
-  text-align: center;
-  background: white;
-  border: 1px solid var(--line);
-  color: var(--muted);
-}
-
-@media (max-width: 1050px) {
-  .right { display: none; }
-  .links { gap: 16px; }
-}
-@media (max-width: 800px) {
-  .wrap { width: min(100% - 36px, 1200px); }
-  .nav { min-height: 70px; }
-  .links {
-    display: none;
-    position: absolute;
-    top: 70px;
-    left: 0;
-    right: 0;
-    background: var(--paper);
-    padding: 20px 24px;
-    border-bottom: 1px solid var(--line);
-    flex-direction: column;
-    align-items: start;
-    gap: 10px;
-  }
-  .links.open { display: flex; }
-  .menu { display: block; }
-  .hero { grid-template-columns: 1fr; padding: 65px 0 45px; }
-  .hero h1 { letter-spacing: -3px; }
-  .heroart { min-height: 300px; }
-  .ball { max-width: 240px; }
-  .three, .grid { grid-template-columns: 1fr; }
-  .section { padding: 55px 0; }
-  .sectionhead { align-items: start; flex-direction: column; }
-  .tile { min-height: 205px; }
-}
-@media (max-width: 700px) {
-  .football-match {
-    grid-template-columns: minmax(0,1fr) 70px minmax(0,1fr);
-    gap: 10px;
-    padding: 17px 12px;
-  }
-  .football-date { grid-column: 1 / -1; text-align: center; }
-  .football-team { font-size: 12px; }
-  .football-score { font-size: 20px; }
 }
 </style>
 </head>
 
 <body>
+
 <header class="top">
   <nav class="nav wrap">
+
     <a class="brand" href="#/">
       <span class="mark">✳</span>
       <span>
@@ -475,7 +683,14 @@ td small { display: block; color: var(--muted); margin-top: 5px; }
     </div>
 
     <span class="right">THE 2026 EDITION · EN</span>
-    <button class="menu" id="menu" aria-label="Toggle navigation">☰</button>
+
+    <button
+      class="menu"
+      id="menu"
+      aria-label="Toggle navigation"
+      aria-expanded="false"
+    >☰</button>
+
   </nav>
 </header>
 
@@ -483,15 +698,23 @@ td small { display: block; color: var(--muted); margin-top: 5px; }
 
 <footer class="footer">
   <div class="wrap">
-    <span>© 2026 BALLON EN BOIS. AN INDEPENDENT SATIRICAL FOOTBALL PROJECT.</span>
-    <span>EXCELLENCE WAS EXPECTED. DISAPPOINTMENT DELIVERED.</span>
+    <span>
+      © 2026 BALLON EN BOIS. AN INDEPENDENT SATIRICAL FOOTBALL PROJECT.
+    </span>
+    <span>
+      EXCELLENCE WAS EXPECTED. DISAPPOINTMENT DELIVERED.
+    </span>
   </div>
 </footer>
 
 <script>
 "use strict";
 
-/* Fictional demonstration profiles — not real nominees. */
+/* -------------------------------------------------
+   DEMONSTRATION PLAYER DATA
+   Fictional profiles — not actual nominees
+------------------------------------------------- */
+
 const players = [
   {
     name: "Alex Mercer",
@@ -574,7 +797,10 @@ let filters = {
 
 let sort = "highest";
 
-/* Wooden trophy illustration */
+/* -------------------------------------------------
+   WOODEN FOOTBALL TROPHY
+------------------------------------------------- */
+
 const ball = `
 <svg class="ball" viewBox="0 0 360 390" role="img"
  aria-label="Stylized wooden football trophy">
@@ -589,32 +815,62 @@ const ball = `
       <stop offset="1" stop-color="#35291f"/>
     </linearGradient>
   </defs>
-  <ellipse cx="180" cy="368" rx="104" ry="10" fill="#000" opacity=".08"/>
+
+  <ellipse cx="180" cy="368" rx="104" ry="10"
+           fill="#000" opacity=".08"/>
+
   <path d="M144 292h72l14 33h-100z" fill="#856b53"/>
+
   <rect x="104" y="323" width="152" height="40" rx="2"
         fill="url(#baseGradient)"/>
-  <circle cx="180" cy="153" r="135" fill="url(#woodGradient)"
+
+  <circle cx="180" cy="153" r="135"
+          fill="url(#woodGradient)"
           stroke="#61452e" stroke-width="2"/>
-  <g stroke="#61472e" stroke-width="3" fill="none" opacity=".86">
+
+  <g stroke="#61472e" stroke-width="3"
+     fill="none" opacity=".86">
     <path d="M180 67l55 38-19 64h-72l-19-64z"/>
-    <path d="M180 67l-9-47M235 105l66-24M216 169l59 57
-             M144 169l-59 57M125 105L59 81"/>
+    <path d="M180 67l-9-47M235 105l66-24
+             M216 169l59 57M144 169l-59 57
+             M125 105L59 81"/>
     <path d="M144 169l-29 60 65 49 65-49-29-60
-             M115 229l-41-6M245 229l41-6M180 278v10"/>
-    <path d="M59 81l-13 60 39 85M301 81l13 60-39 85
-             M171 20l-52 16-60 45M189 20l52 16 60 45"/>
+             M115 229l-41-6M245 229l41-6
+             M180 278v10"/>
+    <path d="M59 81l-13 60 39 85
+             M301 81l13 60-39 85
+             M171 20l-52 16-60 45
+             M189 20l52 16 60 45"/>
   </g>
+
   <g stroke="#e9d0ae" opacity=".24">
-    <path d="M112 84l37 20M175 44l34 14M192 186l-25 34
-             M80 160l23 29M237 255l-29 11"/>
+    <path d="M112 84l37 20
+             M175 44l34 14
+             M192 186l-25 34
+             M80 160l23 29
+             M237 255l-29 11"/>
   </g>
-  <text x="180" y="347" text-anchor="middle" fill="#e7d4b9"
-        font-size="12" font-family="Georgia" letter-spacing="1">
+
+  <text x="180" y="347" text-anchor="middle"
+        fill="#e7d4b9" font-size="12"
+        font-family="Georgia" letter-spacing="1">
     B E B · 2 0 2 6
   </text>
 </svg>`;
 
-/* Shared page heading */
+/* -------------------------------------------------
+   SHARED UTILITIES
+------------------------------------------------- */
+
+function escapeHTML(value) {
+  return String(value ?? "")
+    .replaceAll("&", "&amp;")
+    .replaceAll("<", "&lt;")
+    .replaceAll(">", "&gt;")
+    .replaceAll('"', "&quot;")
+    .replaceAll("'", "&#39;");
+}
+
 function pagehead(title, eyebrow, description) {
   return `
     <section class="pagehead">
@@ -627,10 +883,14 @@ function pagehead(title, eyebrow, description) {
   `;
 }
 
-/* Home */
+/* -------------------------------------------------
+   HOME
+------------------------------------------------- */
+
 function home() {
   return `
     <div class="wrap">
+
       <section class="hero">
         <div>
           <div class="eyebrow">
@@ -651,8 +911,12 @@ function home() {
           </p>
 
           <div style="display:flex;gap:12px;flex-wrap:wrap;margin-top:32px">
-            <a class="btn" href="#/nominees">Explore nominees ↗</a>
-            <a class="btn outline" href="#/rankings">View rankings</a>
+            <a class="btn" href="#/nominees">
+              Explore nominees ↗
+            </a>
+            <a class="btn outline" href="#/rankings">
+              View rankings
+            </a>
           </div>
         </div>
 
@@ -660,11 +924,13 @@ function home() {
       </section>
 
       <section class="section">
+
         <div class="sectionhead">
           <div>
             <div class="eyebrow">The distinction</div>
             <h2>Not the worst.<br>The most disappointing.</h2>
           </div>
+
           <p class="sub">
             Talent alone does not qualify a player for the wooden ball.
             Expectations do. We consider the promise, the price,
@@ -673,11 +939,14 @@ function home() {
         </div>
 
         <div class="three">
+
           <a href="#/nominees" class="tile">
             <span class="num">01 / THE PLAYERS</span>
             <div>
               <h3>Nominees</h3>
-              <p>Players under consideration across European football.</p>
+              <p>
+                Players under consideration across European football.
+              </p>
             </div>
             <span class="arr">↗</span>
           </a>
@@ -686,7 +955,9 @@ function home() {
             <span class="num">02 / THE MEASURE</span>
             <div>
               <h3>Rankings</h3>
-              <p>A transparent view of the expectation–performance gap.</p>
+              <p>
+                A transparent view of the expectation–performance gap.
+              </p>
             </div>
             <span class="arr">↗</span>
           </a>
@@ -695,17 +966,23 @@ function home() {
             <span class="num">03 / THE EVIDENCE</span>
             <div>
               <h3>Football Data</h3>
-              <p>Real results and fixtures across nine competitions.</p>
+              <p>
+                Real results and fixtures across nine competitions.
+              </p>
             </div>
             <span class="arr">↗</span>
           </a>
+
         </div>
       </section>
+
     </div>
 
     <div class="strip">
       <div class="wrap">
-        ${leagues.slice(1).map(name => `<span>${name}</span>`).join("")}
+        ${leagues.slice(1).map(name =>
+          `<span>${escapeHTML(name)}</span>`
+        ).join("")}
       </div>
     </div>
 
@@ -715,58 +992,62 @@ function home() {
           <div class="eyebrow">2026 edition</div>
           <h2>Where promise meets reality.</h2>
         </div>
-        <a class="textlink" href="#/football">Explore real match data ↗</a>
+
+        <a class="textlink" href="#/football">
+          Explore real match data ↗
+        </a>
       </div>
 
       <p class="sub">
-        Now tracking six domestic leagues, the UEFA Champions League,
+        Tracking six domestic leagues, the UEFA Champions League,
         the FIFA World Cup and the UEFA European Championship.
       </p>
 
       <p class="note">
-        Preview content: nominee names, clubs and scores currently shown
-        are fictional examples for layout testing. No real-world
-        nominations or awards have been announced here.
+        Preview content: nominee names, clubs and scores currently
+        shown are fictional examples for layout testing.
+        No real-world nominations or awards have been announced here.
       </p>
     </section>
   `;
 }
 
-/* Nominee filters */
+/* -------------------------------------------------
+   NOMINEES AND RANKINGS
+------------------------------------------------- */
+
 function controls() {
   return `
     <div class="toolbar">
-      <select id="league" class="control" aria-label="Filter by league">
+
+      <select id="league" class="control"
+              aria-label="Filter by league">
         ${leagues.map(name => `
           <option ${filters.league === name ? "selected" : ""}>
-            ${name}
+            ${escapeHTML(name)}
           </option>
         `).join("")}
       </select>
 
-      <select id="category" class="control" aria-label="Filter by category">
+      <select id="category" class="control"
+              aria-label="Filter by category">
         ${categories.map(name => `
           <option ${filters.category === name ? "selected" : ""}>
-            ${name}
+            ${escapeHTML(name)}
           </option>
         `).join("")}
       </select>
 
-      <input id="search" class="control search"
+      <input
+        id="search"
+        class="control search"
         aria-label="Search nominees"
         placeholder="Search nominee or club"
-        value="${escapeHTML(filters.search)}">
+        value="${escapeHTML(filters.search)}"
+      >
+
     </div>
   `;
-}
-
-function escapeHTML(value) {
-  return String(value ?? "")
-    .replaceAll("&", "&amp;")
-    .replaceAll("<", "&lt;")
-    .replaceAll(">", "&gt;")
-    .replaceAll('"', "&quot;")
-    .replaceAll("'", "&#39;");
 }
 
 function filteredPlayers() {
@@ -788,7 +1069,9 @@ function filteredPlayers() {
       return leagueMatch && categoryMatch && searchMatch;
     })
     .sort((a, b) =>
-      sort === "highest" ? b.score - a.score : a.score - b.score
+      sort === "highest"
+        ? b.score - a.score
+        : a.score - b.score
     );
 }
 
@@ -803,7 +1086,9 @@ function nominees() {
         Demonstration profiles only. All names, clubs and scores
         below are fictional and are not real nominations.
       </p>
+
       ${controls()}
+
       <div id="results"></div>
     </section>
   `;
@@ -816,6 +1101,7 @@ function rankings() {
     "A comparative table designed to rank underperformance against preseason expectations."
   ) + `
     <section class="section wrap" style="padding-top:0">
+
       <p class="note">
         Demonstration data only. All listed players, clubs and scores
         are fictional. Actual rankings require verified season
@@ -825,12 +1111,18 @@ function rankings() {
       ${controls()}
 
       <div class="toolbar">
-        <label for="sort" class="eyebrow" style="align-self:center">
+        <label for="sort" class="eyebrow"
+               style="align-self:center">
           Sort
         </label>
+
         <select id="sort" class="control">
-          <option value="highest">Highest disappointment first</option>
-          <option value="lowest">Lowest disappointment first</option>
+          <option value="highest">
+            Highest disappointment first
+          </option>
+          <option value="lowest">
+            Lowest disappointment first
+          </option>
         </select>
       </div>
 
@@ -842,9 +1134,10 @@ function rankings() {
 function drawResults(route) {
   const items = filteredPlayers();
   const output = document.getElementById("results");
+
   if (!output) return;
 
-  if (items.length === 0) {
+  if (!items.length) {
     output.innerHTML =
       '<div class="empty">No nominees match these filters.</div>';
     return;
@@ -856,15 +1149,22 @@ function drawResults(route) {
         ${items.map(player => `
           <article class="nominee">
             <div class="meta">
-              ${escapeHTML(player.league)} · ${escapeHTML(player.category)}
+              ${escapeHTML(player.league)} ·
+              ${escapeHTML(player.category)}
             </div>
+
             <h3>${escapeHTML(player.name)}</h3>
+
             <div class="club">
-              ${escapeHTML(player.club)} · ${escapeHTML(player.role)}
+              ${escapeHTML(player.club)} ·
+              ${escapeHTML(player.role)}
             </div>
-            <p class="sub" style="font-size:13px;margin-top:18px">
+
+            <p class="sub"
+               style="font-size:13px;margin-top:18px">
               ${escapeHTML(player.reason)}
             </p>
+
             <div class="score">
               <span>Illustrative index / 100</span>
               <b>${player.score}</b>
@@ -886,6 +1186,7 @@ function drawResults(route) {
               <th>Index / 100</th>
             </tr>
           </thead>
+
           <tbody>
             ${items.map((player, index) => `
               <tr>
@@ -906,17 +1207,32 @@ function drawResults(route) {
   }
 }
 
-/* Methodology */
+/* -------------------------------------------------
+   METHODOLOGY
+------------------------------------------------- */
+
 function methodology() {
   const measures = [
-    ["40%", "Performance versus expectations",
-     "Compare actual output with a position- and minutes-adjusted baseline."],
-    ["25%", "Investment expectations",
-     "Account for transfer fees, compensation and public expectations."],
-    ["20%", "Impact on team",
-     "Evaluate contributions to team outcomes, adjusted for context."],
-    ["15%", "Errors & consistency",
-     "Assess significant errors and sustained underperformance."]
+    [
+      "40%",
+      "Performance versus expectations",
+      "Compare actual output with a position- and minutes-adjusted baseline."
+    ],
+    [
+      "25%",
+      "Investment expectations",
+      "Account for transfer fees, compensation and public expectations."
+    ],
+    [
+      "20%",
+      "Impact on team",
+      "Evaluate contributions to team outcomes, adjusted for context."
+    ],
+    [
+      "15%",
+      "Errors & consistency",
+      "Assess significant errors and sustained underperformance."
+    ]
   ];
 
   return pagehead(
@@ -925,6 +1241,7 @@ function methodology() {
     "A framework for evaluating the difference between expectation and delivery."
   ) + `
     <section class="section wrap">
+
       <div class="three">
         ${measures.map(([weight, title, description]) => `
           <div class="tile">
@@ -943,11 +1260,15 @@ function methodology() {
         explain adjustments and offer a corrections process.
         Satire and opinion should be clearly labeled.
       </p>
+
     </section>
   `;
 }
 
-/* Football Data */
+/* -------------------------------------------------
+   LIVE FOOTBALL DATA
+------------------------------------------------- */
+
 const footballCompetitions = [
   ["PL", "Premier League"],
   ["PD", "La Liga"],
@@ -970,33 +1291,41 @@ function footballPage() {
     "The evidence",
     "Real results and upcoming fixtures across nine competitions."
   ) + `
-    <section class="section wrap" style="padding-top:15px">
+    <section class="section wrap" style="padding-top:25px">
 
       <div class="eyebrow">Select a competition</div>
 
       <div class="football-controls">
-        <select id="football-competition"
+        <select
+          id="football-competition"
           class="control"
-          aria-label="Select football competition">
+          aria-label="Select football competition"
+        >
           ${footballCompetitions.map(([code, name]) => `
             <option value="${code}"
               ${code === footballCompetition ? "selected" : ""}>
-              ${name}
+              ${escapeHTML(name)}
             </option>
           `).join("")}
         </select>
       </div>
 
       <div class="football-tabs">
-        <button type="button"
+        <button
+          type="button"
           class="football-tab ${footballType === "results" ? "active" : ""}"
-          data-football-type="results">
+          data-football-type="results"
+          aria-pressed="${footballType === "results"}"
+        >
           Latest results
         </button>
 
-        <button type="button"
+        <button
+          type="button"
           class="football-tab ${footballType === "fixtures" ? "active" : ""}"
-          data-football-type="fixtures">
+          data-football-type="fixtures"
+          aria-pressed="${footballType === "fixtures"}"
+        >
           Upcoming fixtures
         </button>
       </div>
@@ -1011,7 +1340,9 @@ function footballPage() {
         Match information is retrieved from our football database.
         International tournament results may be historical.
         Match scores are not individual player ratings.
+        All match dates are displayed in UTC.
       </p>
+
     </section>
   `;
 }
@@ -1020,7 +1351,10 @@ function footballDate(value) {
   if (!value) return "Date unavailable";
 
   const date = new Date(value);
-  if (Number.isNaN(date.getTime())) return "Date unavailable";
+
+  if (Number.isNaN(date.getTime())) {
+    return "Date unavailable";
+  }
 
   return new Intl.DateTimeFormat("en-US", {
     month: "short",
@@ -1053,26 +1387,41 @@ function footballMatchHTML(match) {
     ? "Full time"
     : escapeHTML(match.status || "Scheduled");
 
+  const matchday =
+    match.matchday != null
+      ? `Matchday ${escapeHTML(match.matchday)}`
+      : "";
+
+  const date = footballDate(match.kickoff);
+
   return `
     <article class="football-match">
-      <div class="football-date">
-        ${footballDate(match.kickoff)}
-      </div>
 
-      <div class="football-home football-team">${home}</div>
+      <div class="football-home football-team">
+        ${home}
+      </div>
 
       <div class="football-score">
         ${score}
         <div class="football-status">${status}</div>
       </div>
 
-      <div class="football-away football-team">${away}</div>
+      <div class="football-away football-team">
+        ${away}
+      </div>
+
+      <div class="football-meta">
+        <span>${date}</span>
+        ${matchday ? `<span>·</span><span>${matchday}</span>` : ""}
+      </div>
+
     </article>
   `;
 }
 
 async function loadFootballData() {
   const content = document.getElementById("football-content");
+
   if (!content) return;
 
   const requestId = ++footballRequestId;
@@ -1090,7 +1439,9 @@ async function loadFootballData() {
     const response = await fetch(`/api/football?${params}`);
 
     if (!response.ok) {
-      throw new Error(`Football API returned HTTP ${response.status}`);
+      throw new Error(
+        `Football API returned HTTP ${response.status}`
+      );
     }
 
     const data = await response.json();
@@ -1102,13 +1453,21 @@ async function loadFootballData() {
       return;
     }
 
-    if (!Array.isArray(data.matches) || data.matches.length === 0) {
+    if (
+      !Array.isArray(data.matches) ||
+      data.matches.length === 0
+    ) {
+      const label = footballType === "results"
+        ? "completed results"
+        : "upcoming fixtures";
+
       content.innerHTML = `
         <div class="football-message">
-          No ${footballType === "results" ? "completed results" : "upcoming fixtures"}
-          are currently available for this competition.
+          No ${label} are currently available
+          for this competition.
         </div>
       `;
+
       return;
     }
 
@@ -1136,7 +1495,10 @@ async function loadFootballData() {
 }
 
 function initializeFootballPage() {
-  const selector = document.getElementById("football-competition");
+  const selector = document.getElementById(
+    "football-competition"
+  );
+
   if (!selector) return;
 
   selector.addEventListener("change", event => {
@@ -1144,25 +1506,33 @@ function initializeFootballPage() {
     loadFootballData();
   });
 
-  document.querySelectorAll("[data-football-type]").forEach(button => {
-    button.addEventListener("click", () => {
-      footballType = button.dataset.footballType;
+  document
+    .querySelectorAll("[data-football-type]")
+    .forEach(button => {
+      button.addEventListener("click", () => {
+        footballType = button.dataset.footballType;
 
-      document.querySelectorAll("[data-football-type]").forEach(tab => {
-        tab.classList.toggle(
-          "active",
-          tab.dataset.footballType === footballType
-        );
+        document
+          .querySelectorAll("[data-football-type]")
+          .forEach(tab => {
+            const active =
+              tab.dataset.footballType === footballType;
+
+            tab.classList.toggle("active", active);
+            tab.setAttribute("aria-pressed", String(active));
+          });
+
+        loadFootballData();
       });
-
-      loadFootballData();
     });
-  });
 
   loadFootballData();
 }
 
-/* Navigation */
+/* -------------------------------------------------
+   NAVIGATION AND PAGE RENDERING
+------------------------------------------------- */
+
 function render() {
   let route =
     location.hash.replace("#/", "").split("?")[0] || "home";
@@ -1175,18 +1545,26 @@ function render() {
     methodology
   };
 
-  if (!pages[route]) route = "home";
+  if (!pages[route]) {
+    route = "home";
+  }
 
   document.getElementById("app").innerHTML = pages[route]();
 
-  document.querySelectorAll("[data-route]").forEach(link => {
-    link.classList.toggle(
-      "active",
-      link.dataset.route === route
-    );
-  });
+  document
+    .querySelectorAll("[data-route]")
+    .forEach(link => {
+      link.classList.toggle(
+        "active",
+        link.dataset.route === route
+      );
+    });
 
-  document.getElementById("links").classList.remove("open");
+  const links = document.getElementById("links");
+  const menu = document.getElementById("menu");
+
+  links.classList.remove("open");
+  menu.setAttribute("aria-expanded", "false");
 
   if (route === "nominees" || route === "rankings") {
     drawResults(route);
@@ -1203,6 +1581,7 @@ function render() {
 
     if (route === "rankings") {
       const sortSelector = document.getElementById("sort");
+
       sortSelector.value = sort;
 
       sortSelector.addEventListener("change", event => {
@@ -1220,11 +1599,19 @@ function render() {
 }
 
 document.getElementById("menu").onclick = () => {
-  document.getElementById("links").classList.toggle("open");
+  const links = document.getElementById("links");
+  const isOpen = links.classList.toggle("open");
+
+  document.getElementById("menu").setAttribute(
+    "aria-expanded",
+    String(isOpen)
+  );
 };
 
 window.addEventListener("hashchange", render);
+
 render();
 </script>
+
 </body>
 </html>
