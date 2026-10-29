@@ -508,66 +508,165 @@ module.exports = async function handler(req, res) {
       AVAILABLE MATCHDAYS
     */
 
+    
     if (type === "matchdays") {
-      const params = matchQuery(
-        competition,
-        season,
-        null
-      );
+      const rows = [];
+      const pageSize = 1000;
+      const maxPages = 30;
 
-      params.set(
-        "select",
-        "matchday,season_start"
-      );
-
-      params.set(
-        "matchday",
-        "not.is.null"
-      );
-
-      params.set(
-        "order",
-        "season_start.desc,matchday.desc"
-      );
-
-      params.set("limit", "1000");
-
-      const [rows, lastUpdated] =
-        await Promise.all([
-          supabaseRead("fd_matches", params),
-          getLastUpdated(competition)
-        ]);
-
-      const seasons = {};
-
-      for (const row of rows) {
-        const key = String(
-          row.season_start
+      // Retrieve all match records, not just the
+      // first 100 or 1,000.
+      for (let page = 0; page < maxPages; page++) {
+        const params = matchQuery(
+          competition,
+          season,
+          null
         );
 
-        if (!seasons[key]) {
-          seasons[key] = new Set();
+        params.set(
+          "select",
+          "provider_id,season_start,matchday,kickoff,status"
+        );
+
+        params.set("matchday", "not.is.null");
+
+        params.set(
+          "order",
+          "season_start.desc,provider_id.asc"
+        );
+
+        params.set("limit", String(pageSize));
+        params.set(
+          "offset",
+          String(page * pageSize)
+        );
+
+        const batch = await supabaseRead(
+          "fd_matches",
+          params
+        );
+
+        rows.push(...batch);
+
+        if (batch.length < pageSize) break;
+
+        if (page === maxPages - 1) {
+          throw new Error(
+            "Matchday query exceeded pagination limit"
+          );
+        }
+      }
+
+      const lastUpdated =
+        await getLastUpdated(competition);
+
+      const now = Date.now();
+      const seasons = new Map();
+
+      for (const match of rows) {
+        const year = Number(match.season_start);
+        const day = Number(match.matchday);
+
+        if (
+          !Number.isInteger(year) ||
+          !Number.isInteger(day) ||
+          day < 1
+        ) {
+          continue;
         }
 
-        seasons[key].add(
-          row.matchday
-        );
+        if (!seasons.has(year)) {
+          seasons.set(year, {
+            all: new Set(),
+            results: new Set(),
+            fixtures: new Set(),
+            latestResult: null,
+            nextFixture: null
+          });
+        }
+
+        const entry = seasons.get(year);
+        entry.all.add(day);
+
+        const kickoffTime = match.kickoff
+          ? Date.parse(match.kickoff)
+          : NaN;
+
+        if (match.status === "FINISHED") {
+          entry.results.add(day);
+
+          if (
+            Number.isFinite(kickoffTime) &&
+            (
+              entry.latestResult === null ||
+              kickoffTime > entry.latestResult.time
+            )
+          ) {
+            entry.latestResult = {
+              day,
+              time: kickoffTime
+            };
+          }
+        }
+
+        const scheduled =
+          match.status === "SCHEDULED" ||
+          match.status === "TIMED";
+
+        // Only confirmed future kickoffs count
+        // toward upcoming fixture navigation.
+        if (
+          scheduled &&
+          Number.isFinite(kickoffTime) &&
+          kickoffTime > now
+        ) {
+          entry.fixtures.add(day);
+
+          if (
+            entry.nextFixture === null ||
+            kickoffTime < entry.nextFixture.time
+          ) {
+            entry.nextFixture = {
+              day,
+              time: kickoffTime
+            };
+          }
+        }
+
+        // A postponed match is included only
+        // if it has a future-dated kickoff.
+        if (
+          match.status === "POSTPONED" &&
+          Number.isFinite(kickoffTime) &&
+          kickoffTime > now
+        ) {
+          entry.fixtures.add(day);
+        }
       }
 
       const availableSeasons =
-        Object.entries(seasons)
-          .map(([year, days]) => ({
-            season: Number(year),
+        [...seasons.entries()]
+          .map(([year, entry]) => ({
+            season: year,
 
+            // Keep the existing field for
+            // backward compatibility.
             matchdays:
-              [...days].sort(
-                (a, b) => b - a
-              )
+              [...entry.all].sort((a, b) => b - a),
+
+            results_matchdays:
+              [...entry.results].sort((a, b) => a - b),
+
+            fixtures_matchdays:
+              [...entry.fixtures].sort((a, b) => a - b),
+
+            latest_result_matchday:
+              entry.latestResult?.day ?? null,
+
+            next_fixture_matchday:
+              entry.nextFixture?.day ?? null
           }))
-          .sort(
-            (a, b) =>
-              b.season - a.season
-          );
+          .sort((a, b) => b.season - a.season);
 
       return send(res, 200, {
         competition,
@@ -576,6 +675,7 @@ module.exports = async function handler(req, res) {
         seasons: availableSeasons
       });
     }
+
 
     /*
       MATCH RESULTS AND FIXTURES
