@@ -95,6 +95,20 @@ function matchQuery(competition, season, matchday) {
   return params;
 }
 
+async function getLastUpdated(competition) {
+  const params = new URLSearchParams();
+
+  params.set("select", "updated_at");
+  params.set("competition_code", `eq.${competition}`);
+  params.set("updated_at", "not.is.null");
+  params.set("order", "updated_at.desc");
+  params.set("limit", "1");
+
+  const rows = await supabaseRead("fd_matches", params);
+
+  return rows.length ? rows[0].updated_at : null;
+}
+
 async function attachTeams(matches) {
   const ids = [
     ...new Set(
@@ -191,7 +205,10 @@ module.exports = async function handler(req, res) {
       params.set("order", "season_start.desc,matchday.desc");
       params.set("limit", "1000");
 
-      const rows = await supabaseRead("fd_matches", params);
+      const [rows, lastUpdated] = await Promise.all([
+        supabaseRead("fd_matches", params),
+        getLastUpdated(competition)
+      ]);
 
       const seasons = {};
 
@@ -213,6 +230,7 @@ module.exports = async function handler(req, res) {
       return send(res, 200, {
         competition,
         type,
+        last_updated: lastUpdated,
         seasons: availableSeasons
       });
     }
@@ -232,7 +250,11 @@ module.exports = async function handler(req, res) {
 
     params.set("limit", String(limit));
 
-    const matches = await supabaseRead("fd_matches", params);
+    const [matches, lastUpdated] = await Promise.all([
+      supabaseRead("fd_matches", params),
+      getLastUpdated(competition)
+    ]);
+
     const enrichedMatches = await attachTeams(matches);
 
     return send(res, 200, {
@@ -240,6 +262,7 @@ module.exports = async function handler(req, res) {
       type,
       season,
       matchday,
+      last_updated: lastUpdated,
       count: enrichedMatches.length,
       matches: enrichedMatches
     });
