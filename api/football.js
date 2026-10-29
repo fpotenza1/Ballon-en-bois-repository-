@@ -697,10 +697,20 @@ module.exports = async function handler(req, res) {
         "order",
         "kickoff.desc"
       );
+    
     } else {
+      // Upcoming fixtures must have a future kickoff.
+      // Exclude postponed matches until they are
+      // assigned a confirmed scheduled status.
+
       params.set(
         "status",
-        "in.(SCHEDULED,TIMED,POSTPONED)"
+        "in.(SCHEDULED,TIMED)"
+      );
+
+      params.set(
+        "kickoff",
+        `gt.${new Date().toISOString()}`
       );
 
       params.set(
@@ -708,6 +718,7 @@ module.exports = async function handler(req, res) {
         "kickoff.asc"
       );
     }
+
 
     params.set(
       "limit",
