@@ -2020,15 +2020,117 @@ function footballPage() {
    FOOTBALL DATA — MATCHDAY NAVIGATION
 ================================================ */
 
+
 function availableFootballMatchdays() {
   const seasonRecord = footballSeasons.find(
     item => item.season === footballSeason
   );
 
   return seasonRecord
-    ? [...seasonRecord.matchdays].sort((a,b) => a-b)
+    ? [...seasonRecord.matchdays].sort((a, b) => a - b)
     : [];
 }
+
+/* ================================================
+   FOOTBALL DATA — AUTOMATIC MATCHDAY SELECTION
+================================================ */
+
+async function selectDefaultFootballMatchday() {
+  const matchdays = availableFootballMatchdays();
+
+  // Invalidate any previous request.
+  const requestId = ++footballRequestId;
+
+  if (!matchdays.length) {
+    footballMatchday = null;
+    renderFootballMatchdayControls();
+    loadFootballData();
+    return;
+  }
+
+  const competition = footballCompetition;
+  const type = footballType;
+  const season = footballSeason;
+
+  try {
+    const params = new URLSearchParams({
+      competition: competition,
+      type: type,
+      season: String(season),
+      limit: "100"
+    });
+
+    const response = await fetch(
+      `/api/football?${params}`
+    );
+
+    if (!response.ok) {
+      throw new Error(
+        `Football API HTTP ${response.status}`
+      );
+    }
+
+    const data = await response.json();
+
+    // Ignore outdated responses when users switch tabs
+    // or competitions while requests are loading.
+    if (
+      requestId !== footballRequestId ||
+      competition !== footballCompetition ||
+      type !== footballType ||
+      season !== footballSeason ||
+      !document.getElementById("football-content")
+    ) {
+      return;
+    }
+
+    const validMatchdays = new Set(matchdays);
+
+    const matchingDays = (
+      Array.isArray(data.matches) ? data.matches : []
+    )
+      .map(match => Number(match.matchday))
+      .filter(day => validMatchdays.has(day));
+
+    if (matchingDays.length > 0) {
+      footballMatchday = type === "results"
+        ? Math.max(...matchingDays)
+        : Math.min(...matchingDays);
+    } else {
+      // No matching games in the selected season.
+      // Fall back to an available matchday.
+      footballMatchday = type === "results"
+        ? matchdays[matchdays.length - 1]
+        : matchdays[0];
+    }
+
+    renderFootballMatchdayControls();
+    loadFootballData();
+
+  } catch (error) {
+    console.error(error);
+
+    if (
+      requestId !== footballRequestId ||
+      competition !== footballCompetition ||
+      type !== footballType ||
+      season !== footballSeason
+    ) {
+      return;
+    }
+
+    footballMatchday = type === "results"
+      ? matchdays[matchdays.length - 1]
+      : matchdays[0];
+
+    renderFootballMatchdayControls();
+    loadFootballData();
+  }
+}
+
+/* ================================================
+   FOOTBALL DATA — MATCHDAY NAVIGATION
+================================================ */
 
 function renderFootballMatchdayControls() {
   const container = document.getElementById(
@@ -2086,11 +2188,6 @@ function renderFootballMatchdayControls() {
         class="control"
         aria-label="Select matchday"
       >
-
-        <option value="">
-          Latest
-        </option>
-
         ${matchdays.map(day => `
           <option
             value="${day}"
@@ -2099,7 +2196,6 @@ function renderFootballMatchdayControls() {
             Matchday ${day}
           </option>
         `).join("")}
-
       </select>
 
       <button
@@ -2114,47 +2210,55 @@ function renderFootballMatchdayControls() {
     </div>
   `;
 
+  // Changing season automatically selects an
+  // appropriate matchday for the active tab.
   document.getElementById(
     "football-season"
   )?.addEventListener("change", event => {
     footballSeason = Number(event.target.value);
     footballMatchday = null;
 
-    renderFootballMatchdayControls();
-    loadFootballData();
+    selectDefaultFootballMatchday();
   });
 
+  // Manual matchday selection.
   document.getElementById(
     "football-matchday"
   )?.addEventListener("change", event => {
-    footballMatchday = event.target.value
-      ? Number(event.target.value)
-      : null;
+    footballMatchday = Number(event.target.value);
 
     renderFootballMatchdayControls();
     loadFootballData();
   });
 
+  // Previous matchday.
   document.getElementById(
     "football-previous"
   )?.addEventListener("click", () => {
     if (previous === null) return;
 
     footballMatchday = previous;
+
     renderFootballMatchdayControls();
     loadFootballData();
   });
 
+  // Next matchday.
   document.getElementById(
     "football-next"
   )?.addEventListener("click", () => {
     if (next === null) return;
 
     footballMatchday = next;
+
     renderFootballMatchdayControls();
     loadFootballData();
   });
 }
+
+/* ================================================
+   FOOTBALL DATA — LOAD MATCHDAYS
+================================================ */
 
 async function loadFootballMatchdays() {
   const competition = footballCompetition;
@@ -2162,8 +2266,8 @@ async function loadFootballMatchdays() {
 
   try {
     const params = new URLSearchParams({
-      competition,
-      type:"matchdays"
+      competition: competition,
+      type: "matchdays"
     });
 
     const response = await fetch(
@@ -2180,6 +2284,7 @@ async function loadFootballMatchdays() {
 
     if (
       requestId !== footballRequestId ||
+      competition !== footballCompetition ||
       !document.getElementById("football-content")
     ) {
       return;
@@ -2196,13 +2301,19 @@ async function loadFootballMatchdays() {
     footballMatchday = null;
     footballUpdatedAt = data.last_updated || null;
 
-    renderFootballMatchdayControls();
-    loadFootballData();
+    // Automatically choose the correct matchday
+    // rather than leaving the selector on "Latest".
+    selectDefaultFootballMatchday();
 
   } catch (error) {
     console.error(error);
 
-    if (requestId !== footballRequestId) return;
+    if (
+      requestId !== footballRequestId ||
+      competition !== footballCompetition
+    ) {
+      return;
+    }
 
     footballSeasons = [];
     footballSeason = null;
@@ -2317,6 +2428,10 @@ async function loadFootballData() {
   }
 }
 
+/* ================================================
+   FOOTBALL DATA — INITIALIZE PAGE
+================================================ */
+
 function initializeFootballPage() {
   const selector = document.getElementById(
     "football-competition"
@@ -2355,13 +2470,16 @@ function initializeFootballPage() {
         );
       });
 
-      loadFootballData();
+      // Automatically select the latest completed
+      // or next upcoming matchday when switching tabs.
+      selectDefaultFootballMatchday();
     });
 
   });
 
   loadFootballMatchdays();
 }
+
 
 /* ================================================
    OFFICIAL-SOURCE LEAGUE STANDINGS
