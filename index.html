@@ -549,6 +549,7 @@ select:focus-visible {
 /* METHODOLOGY */
 
 .method-grid {
+
   display: grid;
   grid-template-columns: repeat(2,minmax(0,1fr));
   gap: 18px;
@@ -776,6 +777,45 @@ select:focus-visible {
   font-size: 14px;
 }
 
+/* FOOTBALL NAVIGATION AND FRESHNESS */
+
+.football-meta {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin: 4px 0 22px;
+}
+
+.football-updated {
+  color: var(--muted);
+  font-size: 12px;
+  line-height: 1.5;
+}
+
+.football-matchday-nav {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 9px;
+  margin: 0 0 20px;
+}
+
+.football-matchday-nav .control {
+  min-width: 120px;
+}
+
+.football-matchday-nav .btn {
+  min-height: 45px;
+  padding: 11px 15px;
+}
+
+.football-matchday-nav .btn:disabled {
+  opacity: .4;
+  cursor: not-allowed;
+}
+
 /* FOOTER */
 
 .footer {
@@ -793,8 +833,6 @@ select:focus-visible {
   gap: 20px;
   flex-wrap: wrap;
 }
-
-/* RESPONSIVE */
 
 @media (max-width: 1100px) {
   .edition { display: none; }
@@ -1020,6 +1058,7 @@ const players = [
     category:"Player",
     reason:"Illustrative profile — inconsistency relative to expectations."
   },
+
   {
     name:"Étienne Moreau",
     club:"Olympique Belleville",
@@ -1623,6 +1662,11 @@ const footballCompetitions = [
 let footballCompetition = "PL";
 let footballType = "results";
 let footballRequestId = 0;
+let footballSeason = null;
+let footballMatchday = null;
+
+let footballSeasons = [];
+let footballUpdatedAt = null;
 
 function footballPage() {
   return pagehead(
@@ -1671,6 +1715,19 @@ function footballPage() {
           Upcoming fixtures
         </button>
 
+      </div>
+
+      <div class="football-meta">
+        <div id="football-updated" class="football-updated" role="status">
+          Last updated: checking database...
+        </div>
+      </div>
+
+      <div class="football-matchday-nav" aria-label="Matchday navigation">
+        <select id="football-season" class="control" aria-label="Select season"></select>
+        <button id="football-previous" class="btn btn-outline" type="button">← Previous</button>
+        <select id="football-matchday" class="control" aria-label="Select matchday"></select>
+        <button id="football-next" class="btn btn-outline" type="button">Next →</button>
       </div>
 
       <div id="football-content" aria-live="polite">
@@ -1913,125 +1970,163 @@ function footballMatchHTML(match) {
   `;
 }
 
-async function loadFootballData() {
-  const content = document.getElementById(
-    "football-content"
-  );
+function footballUpdateLabel(value) {
+  if (!value) return "Last updated: unavailable";
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return "Last updated: unavailable";
+  return "Last updated: " + new Intl.DateTimeFormat("en-US", {
+    year: "numeric", month: "long", day: "numeric",
+    hour: "numeric", minute: "2-digit", timeZoneName: "short"
+  }).format(date);
+}
 
+function renderFootballNavigation() {
+  const seasonSelect = document.getElementById("football-season");
+  const daySelect = document.getElementById("football-matchday");
+  const previous = document.getElementById("football-previous");
+  const next = document.getElementById("football-next");
+  if (!seasonSelect || !daySelect || !previous || !next) return;
+
+  const selectedSeason = footballSeasons.find(item => item.season === footballSeason);
+  const days = selectedSeason ? [...selectedSeason.matchdays].sort((a,b) => a-b) : [];
+
+  seasonSelect.innerHTML = footballSeasons.length
+    ? footballSeasons.map(item => `<option value="${item.season}" ${item.season === footballSeason ? "selected" : ""}>Season ${item.season}</option>`).join("")
+    : `<option value="">No seasons available</option>`;
+  seasonSelect.disabled = !footballSeasons.length;
+
+  daySelect.innerHTML = `<option value="">All matchdays</option>` +
+    days.map(day => `<option value="${day}" ${day === footballMatchday ? "selected" : ""}>Matchday ${day}</option>`).join("");
+  daySelect.disabled = !days.length;
+
+  const index = days.indexOf(footballMatchday);
+  previous.disabled = !days.length || (index === 0);
+  next.disabled = !days.length || (index === days.length - 1);
+  // When viewing all matchdays, either arrow starts at the relevant end.
+  if (index === -1 && days.length) {
+    previous.disabled = false;
+    next.disabled = false;
+  }
+}
+
+function setFootballUpdated(value) {
+  footballUpdatedAt = value || null;
+  const element = document.getElementById("football-updated");
+  if (element) {
+    element.textContent = footballUpdateLabel(footballUpdatedAt);
+    element.title = footballUpdatedAt || "No database update timestamp available";
+  }
+}
+
+async function loadFootballData(resetMatchday = false) {
+  const content = document.getElementById("football-content");
   if (!content) return;
-
   const requestId = ++footballRequestId;
-
-  content.innerHTML = `
-    <div class="football-message">
-      Loading football data...
-    </div>
-  `;
-
-  const params = new URLSearchParams({
-    competition:footballCompetition,
-    type:footballType,
-    limit:"20"
-  });
+  content.innerHTML = `<div class="football-message">Loading football data...</div>`;
 
   try {
-    const response = await fetch(
-      `/api/football?${params}`
-    );
+    if (resetMatchday || !footballSeasons.length) {
+      const [metadataResponse, previewResponse] = await Promise.all([
+        fetch(`/api/football?${new URLSearchParams({competition:footballCompetition,type:"matchdays"})}`),
+        fetch(`/api/football?${new URLSearchParams({competition:footballCompetition,type:footballType,limit:"20"})}`)
+      ]);
+      if (!metadataResponse.ok || !previewResponse.ok) throw new Error("Unable to load football navigation");
+      const [metadata, preview] = await Promise.all([metadataResponse.json(), previewResponse.json()]);
+      if (requestId !== footballRequestId || !document.getElementById("football-content")) return;
 
-    if (!response.ok) {
-      throw new Error(
-        `Football API returned HTTP ${response.status}`
-      );
+      footballSeasons = Array.isArray(metadata.seasons) ? metadata.seasons : [];
+      const firstMatch = Array.isArray(preview.matches) ? preview.matches[0] : null;
+      const preferredSeason = firstMatch?.season_start;
+      footballSeason = footballSeasons.some(item => item.season === preferredSeason)
+        ? preferredSeason : (footballSeasons[0]?.season ?? null);
+      const selected = footballSeasons.find(item => item.season === footballSeason);
+      footballMatchday = selected?.matchdays.includes(firstMatch?.matchday)
+        ? firstMatch.matchday : null;
+      setFootballUpdated(metadata.last_updated || preview.last_updated);
+      renderFootballNavigation();
     }
 
+    const params = new URLSearchParams({
+      competition:footballCompetition,
+      type:footballType,
+      limit:footballMatchday === null ? "20" : "100"
+    });
+    if (footballSeason !== null) params.set("season",String(footballSeason));
+    if (footballMatchday !== null) params.set("matchday",String(footballMatchday));
+
+    const response = await fetch(`/api/football?${params}`);
+    if (!response.ok) throw new Error(`Football API returned HTTP ${response.status}`);
     const data = await response.json();
+    if (requestId !== footballRequestId || !document.getElementById("football-content")) return;
 
-    if (
-      requestId !== footballRequestId ||
-      !document.getElementById("football-content")
-    ) {
+    setFootballUpdated(data.last_updated || footballUpdatedAt);
+    renderFootballNavigation();
+    if (!Array.isArray(data.matches) || !data.matches.length) {
+      content.innerHTML = `<div class="football-message">No ${footballType === "results" ? "completed results" : "upcoming fixtures"} are currently available for this selection.</div>`;
       return;
     }
-
-    if (
-      !Array.isArray(data.matches) ||
-      data.matches.length === 0
-    ) {
-      content.innerHTML = `
-        <div class="football-message">
-          No ${footballType === "results"
-            ? "completed results"
-            : "upcoming fixtures"}
-          are currently available for this competition.
-        </div>
-      `;
-
-      return;
-    }
-
-    content.innerHTML = `
-      <div class="football-list">
-        ${data.matches.map(footballMatchHTML).join("")}
-      </div>
-    `;
-
+    content.innerHTML = `<div class="football-list">${data.matches.map(footballMatchHTML).join("")}</div>`;
   } catch (error) {
     if (requestId !== footballRequestId) return;
-
     console.error("[Football Data]",error);
-
-    const current = document.getElementById(
-      "football-content"
-    );
-
-    if (current) {
-      current.innerHTML = `
-        <div class="football-message">
-          Football data is temporarily unavailable.
-          Please try again later.
-        </div>
-      `;
-    }
+    content.innerHTML = `<div class="football-message">Football data is temporarily unavailable. Please try again later.</div>`;
+    const updated = document.getElementById("football-updated");
+    if (updated && !footballUpdatedAt) updated.textContent = "Last updated: unavailable";
   }
 }
 
 function initializeFootballPage() {
-  const selector = document.getElementById(
-    "football-competition"
-  );
-
+  const selector = document.getElementById("football-competition");
   if (!selector) return;
 
-  selector.addEventListener("change",event => {
+  selector.addEventListener("change", event => {
     footballCompetition = event.target.value;
+    footballSeason = null;
+    footballMatchday = null;
+    footballSeasons = [];
+    footballUpdatedAt = null;
+    loadFootballData(true);
+  });
+
+  document.querySelectorAll("[data-football-type]").forEach(button => {
+    button.addEventListener("click", () => {
+      footballType = button.dataset.footballType;
+      document.querySelectorAll("[data-football-type]").forEach(tab => {
+        const active = tab.dataset.footballType === footballType;
+        tab.classList.toggle("active",active);
+        tab.setAttribute("aria-pressed",String(active));
+      });
+      loadFootballData(true);
+    });
+  });
+
+  document.getElementById("football-season").addEventListener("change", event => {
+    footballSeason = Number(event.target.value);
+    footballMatchday = null;
+    renderFootballNavigation();
     loadFootballData();
   });
 
-  document
-    .querySelectorAll("[data-football-type]")
-    .forEach(button => {
-      button.addEventListener("click",() => {
-        footballType = button.dataset.footballType;
+  document.getElementById("football-matchday").addEventListener("change", event => {
+    footballMatchday = event.target.value === "" ? null : Number(event.target.value);
+    renderFootballNavigation();
+    loadFootballData();
+  });
 
-        document
-          .querySelectorAll("[data-football-type]")
-          .forEach(tab => {
-            const active =
-              tab.dataset.footballType === footballType;
+  function moveMatchday(direction) {
+    const days = [...(footballSeasons.find(item => item.season === footballSeason)?.matchdays || [])].sort((a,b) => a-b);
+    if (!days.length) return;
+    const index = days.indexOf(footballMatchday);
+    const nextIndex = index === -1 ? (direction < 0 ? days.length - 1 : 0) : index + direction;
+    if (nextIndex < 0 || nextIndex >= days.length) return;
+    footballMatchday = days[nextIndex];
+    renderFootballNavigation();
+    loadFootballData();
+  }
 
-            tab.classList.toggle("active",active);
-            tab.setAttribute(
-              "aria-pressed",
-              String(active)
-            );
-          });
-
-        loadFootballData();
-      });
-    });
-
-  loadFootballData();
+  document.getElementById("football-previous").addEventListener("click", () => moveMatchday(-1));
+  document.getElementById("football-next").addEventListener("click", () => moveMatchday(1));
+  loadFootballData(true);
 }
 
 /* ================================================
