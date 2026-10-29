@@ -227,7 +227,7 @@ async function attachTeams(matches) {
 
   params.set(
     "select",
-    "provider_id,name,short_name,tla"
+    "provider_id,name,short_name,tla,crest"
   );
 
   params.set(
