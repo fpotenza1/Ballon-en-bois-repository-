@@ -549,7 +549,6 @@ select:focus-visible {
 /* METHODOLOGY */
 
 .method-grid {
-
   display: grid;
   grid-template-columns: repeat(2,minmax(0,1fr));
   gap: 18px;
@@ -590,6 +589,7 @@ select:focus-visible {
 
 .empty {
   padding: 35px;
+
   text-align: center;
   border: 1px solid var(--yellow-border);
   border-radius: var(--radius);
@@ -802,18 +802,98 @@ select:focus-visible {
   margin: 0 0 20px;
 }
 
-.football-matchday-nav .control {
-  min-width: 120px;
+.football-matchday-nav .control { min-width: 120px; }
+.football-matchday-nav .btn { min-height: 45px; padding: 11px 15px; }
+.football-matchday-nav .btn:disabled { opacity: .4; cursor: not-allowed; }
+
+/* OFFICIAL-SOURCE LEAGUE STANDINGS */
+
+.standings-toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 14px;
+  align-items: end;
+  margin: 20px 0;
 }
 
-.football-matchday-nav .btn {
-  min-height: 45px;
-  padding: 11px 15px;
+.standings-field {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
 }
 
-.football-matchday-nav .btn:disabled {
-  opacity: .4;
-  cursor: not-allowed;
+.standings-field label {
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+}
+
+.standings-updated {
+  color: var(--muted);
+  font-size: 12px;
+  line-height: 1.5;
+  margin: 15px 0;
+}
+
+.standings-scroll {
+  overflow-x: auto;
+  border: 1px solid var(--yellow-border);
+  border-radius: var(--radius);
+  background: var(--yellow);
+}
+
+.standings-table {
+  width: 100%;
+  min-width: 740px;
+  border-collapse: collapse;
+}
+
+.standings-table th {
+  background: #f5d85c;
+  padding: 15px 9px;
+  font-size: 11px;
+  text-align: center;
+}
+
+.standings-table th:nth-child(2) {
+  text-align: left;
+}
+
+.standings-table td {
+  border-top: 1px solid #d9be4b;
+  padding: 11px 9px;
+  font-size: 13px;
+  text-align: center;
+  font-variant-numeric: tabular-nums;
+}
+
+.standings-table td:nth-child(2) {
+  text-align: left;
+}
+
+.standings-club {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-width: 180px;
+}
+
+.standings-club img {
+  width: 28px;
+  height: 28px;
+  object-fit: contain;
+}
+
+.standings-points {
+  font-weight: 800;
+  font-size: 16px !important;
+}
+
+.standings-source {
+  color: var(--muted);
+  font-size: 11px;
+  margin-top: 14px;
 }
 
 /* FOOTER */
@@ -833,6 +913,8 @@ select:focus-visible {
   gap: 20px;
   flex-wrap: wrap;
 }
+
+/* RESPONSIVE */
 
 @media (max-width: 1100px) {
   .edition { display: none; }
@@ -982,6 +1064,7 @@ select:focus-visible {
       <a href="#/nominees" data-route="nominees">Nominees</a>
       <a href="#/rankings" data-route="rankings">Rankings</a>
       <a href="#/football" data-route="football">Football Data</a>
+      <a href="#/standings" data-route="standings">Standings</a>
       <a href="#/methodology" data-route="methodology">Methodology</a>
     </div>
 
@@ -1058,7 +1141,6 @@ const players = [
     category:"Player",
     reason:"Illustrative profile — inconsistency relative to expectations."
   },
-
   {
     name:"Étienne Moreau",
     club:"Olympique Belleville",
@@ -1320,8 +1402,8 @@ function home() {
           <h2>Where promise meets reality.</h2>
         </div>
 
-        <a class="textlink" href="#/football">
-          Explore football data ↗
+        <a class="textlink" href="#/standings">
+          View league standings ↗
         </a>
       </div>
 
@@ -1664,9 +1746,165 @@ let footballType = "results";
 let footballRequestId = 0;
 let footballSeason = null;
 let footballMatchday = null;
-
 let footballSeasons = [];
 let footballUpdatedAt = null;
+
+/* ================================================
+   FOOTBALL DATA — HELPERS
+================================================ */
+
+function footballDate(value) {
+  if (!value) return "Date TBD";
+
+  const date = new Date(value);
+
+  if (Number.isNaN(date.getTime())) {
+    return "Date TBD";
+  }
+
+  return date.toLocaleString("en-GB", {
+    timeZone: "UTC",
+    day: "numeric",
+    month: "short",
+    year: "numeric",
+    hour: "2-digit",
+    minute: "2-digit",
+    hour12: false
+  }) + " UTC";
+}
+
+function footballUpdatedText(value) {
+  if (!value) {
+    return "Last database update: unavailable";
+  }
+
+  return `Last database update: ${footballDate(value)}`;
+}
+
+function footballCompetitionName(code) {
+  return footballCompetitions.find(
+    item => item[0] === code
+  )?.[1] || code;
+}
+
+function footballTeamName(team) {
+  return team?.short_name ||
+    team?.name ||
+    team?.tla ||
+    "Team TBD";
+}
+
+function footballTeamInitials(team) {
+  const name = footballTeamName(team);
+
+  return (
+    team?.tla ||
+    name.split(/\s+/)
+      .map(word => word[0])
+      .join("")
+      .slice(0,3)
+  ).toUpperCase();
+}
+
+function footballTeamBadge(team) {
+  return `
+    <span class="team-fallback">
+      ${escapeHTML(footballTeamInitials(team))}
+    </span>
+  `;
+}
+
+function footballMatchHTML(match) {
+  const home = match.home_team || {};
+  const away = match.away_team || {};
+
+  const finished = match.status === "FINISHED";
+
+  const homeScore = finished
+    ? (match.home_goals ?? "–")
+    : "–";
+
+  const awayScore = finished
+    ? (match.away_goals ?? "–")
+    : "–";
+
+  const matchday = match.matchday != null
+    ? ` · MD ${escapeHTML(match.matchday)}`
+    : "";
+
+  const competitionName =
+    footballCompetitionName(
+      match.competition_code || footballCompetition
+    );
+
+  let statusText = "Scheduled";
+
+  if (finished) {
+    statusText = "Full time";
+  } else if (match.status === "POSTPONED") {
+    statusText = "Postponed";
+  } else if (match.status === "TIMED") {
+    statusText = "Upcoming";
+  }
+
+  return `
+    <article class="card football-match">
+
+      <div class="match-top">
+        <span class="match-competition">
+          ${escapeHTML(competitionName)}${matchday}
+        </span>
+
+        <span class="match-date">
+          ${escapeHTML(footballDate(match.kickoff))}
+        </span>
+      </div>
+
+      <div class="match-body">
+
+        <div class="match-teams">
+
+          <div class="match-team">
+            ${footballTeamBadge(home)}
+            <span class="team-name">
+              ${escapeHTML(footballTeamName(home))}
+            </span>
+          </div>
+
+          <div class="match-team">
+            ${footballTeamBadge(away)}
+            <span class="team-name">
+              ${escapeHTML(footballTeamName(away))}
+            </span>
+          </div>
+
+        </div>
+
+        <div class="match-scores">
+          <div class="match-score">
+            ${escapeHTML(homeScore)}
+          </div>
+
+          <div class="match-score">
+            ${escapeHTML(awayScore)}
+          </div>
+        </div>
+
+        <div class="match-status">
+          <span class="match-status-main">
+            ${escapeHTML(statusText)}
+          </span>
+        </div>
+
+      </div>
+
+    </article>
+  `;
+}
+
+/* ================================================
+   FOOTBALL DATA — PAGE
+================================================ */
 
 function footballPage() {
   return pagehead(
@@ -1681,18 +1919,24 @@ function footballPage() {
       </div>
 
       <div class="football-controls">
+
         <select
           id="football-competition"
           class="control"
           aria-label="Select football competition"
         >
+
           ${footballCompetitions.map(([code,name]) => `
-            <option value="${code}"
-              ${code === footballCompetition ? "selected" : ""}>
+            <option
+              value="${code}"
+              ${code === footballCompetition ? "selected" : ""}
+            >
               ${escapeHTML(name)}
             </option>
           `).join("")}
+
         </select>
+
       </div>
 
       <div class="football-tabs">
@@ -1717,17 +1961,15 @@ function footballPage() {
 
       </div>
 
-      <div class="football-meta">
-        <div id="football-updated" class="football-updated" role="status">
-          Last updated: checking database...
-        </div>
-      </div>
+      <div id="football-matchday-controls"></div>
 
-      <div class="football-matchday-nav" aria-label="Matchday navigation">
-        <select id="football-season" class="control" aria-label="Select season"></select>
-        <button id="football-previous" class="btn btn-outline" type="button">← Previous</button>
-        <select id="football-matchday" class="control" aria-label="Select matchday"></select>
-        <button id="football-next" class="btn btn-outline" type="button">Next →</button>
+      <div class="football-meta">
+        <span
+          id="football-updated"
+          class="football-updated"
+        >
+          Checking database update...
+        </span>
       </div>
 
       <div id="football-content" aria-live="polite">
@@ -1740,343 +1982,320 @@ function footballPage() {
         Match information comes from the Ballon en Bois
         football database. Team initials are displayed
         where verified crests are not yet available.
-        Goalscorers are shown only when event data
-        is supplied by the API. Times are displayed in UTC.
+        Goalscorers are shown only when event data is
+        supplied by the API. Times are displayed in UTC.
       </p>
 
     </section>
   `;
 }
 
-function footballDate(value) {
-  if (!value) return "Date unavailable";
+/* ================================================
+   FOOTBALL DATA — MATCHDAY NAVIGATION
+================================================ */
 
-  const date = new Date(value);
+function availableFootballMatchdays() {
+  const seasonRecord = footballSeasons.find(
+    item => item.season === footballSeason
+  );
 
-  if (Number.isNaN(date.getTime())) {
-    return "Date unavailable";
-  }
-
-  return new Intl.DateTimeFormat("en-US",{
-    month:"short",
-    day:"numeric",
-    year:"numeric",
-    timeZone:"UTC"
-  }).format(date);
+  return seasonRecord
+    ? [...seasonRecord.matchdays].sort((a,b) => a-b)
+    : [];
 }
 
-function footballTime(value) {
-  if (!value) return "";
+function renderFootballMatchdayControls() {
+  const container = document.getElementById(
+    "football-matchday-controls"
+  );
 
-  const date = new Date(value);
+  if (!container) return;
 
-  if (Number.isNaN(date.getTime())) {
-    return "";
-  }
+  const matchdays = availableFootballMatchdays();
 
-  return new Intl.DateTimeFormat("en-GB",{
-    hour:"2-digit",
-    minute:"2-digit",
-    timeZone:"UTC"
-  }).format(date) + " UTC";
-}
+  const seasonOptions = footballSeasons.map(item => `
+    <option
+      value="${item.season}"
+      ${item.season === footballSeason ? "selected" : ""}
+    >
+      ${item.season}–${String(item.season + 1).slice(-2)}
+    </option>
+  `).join("");
 
-function teamBadge(team) {
-  const name = team?.short_name || team?.name || "TBD";
-  const crest = team?.crest || team?.crest_url || null;
+  const currentIndex = matchdays.indexOf(
+    footballMatchday
+  );
 
-  const initials = String(
-    team?.tla || name.slice(0,3)
-  ).slice(0,3);
+  const previous = currentIndex > 0
+    ? matchdays[currentIndex - 1]
+    : null;
 
-  if (
-    typeof crest === "string" &&
-    /^https:\/\//i.test(crest)
-  ) {
-    return `
-      <img
-        class="team-logo"
-        src="${escapeHTML(crest)}"
-        alt="${escapeHTML(name)} crest"
-        loading="lazy"
-        referrerpolicy="no-referrer"
-        onerror="this.style.display='none';this.nextElementSibling.style.display='grid'"
+  const next = currentIndex >= 0 &&
+    currentIndex < matchdays.length - 1
+      ? matchdays[currentIndex + 1]
+      : null;
+
+  container.innerHTML = `
+    <div class="football-matchday-nav">
+
+      <select
+        id="football-season"
+        class="control"
+        aria-label="Select football season"
+      >
+        ${seasonOptions}
+      </select>
+
+      <button
+        type="button"
+        id="football-previous"
+        class="btn btn-outline"
+        ${previous === null ? "disabled" : ""}
+      >
+        ← Previous
+      </button>
+
+      <select
+        id="football-matchday"
+        class="control"
+        aria-label="Select matchday"
       >
 
-      <span class="team-fallback" style="display:none">
-        ${escapeHTML(initials)}
-      </span>
-    `;
-  }
+        <option value="">
+          Latest
+        </option>
 
-  return `
-    <span class="team-fallback">
-      ${escapeHTML(initials)}
-    </span>
+        ${matchdays.map(day => `
+          <option
+            value="${day}"
+            ${day === footballMatchday ? "selected" : ""}
+          >
+            Matchday ${day}
+          </option>
+        `).join("")}
+
+      </select>
+
+      <button
+        type="button"
+        id="football-next"
+        class="btn btn-outline"
+        ${next === null ? "disabled" : ""}
+      >
+        Next →
+      </button>
+
+    </div>
   `;
-}
 
-function scorerEvents(match,side) {
-  const events = Array.isArray(match.events)
-    ? match.events
-    : Array.isArray(match.scorers)
-      ? match.scorers
-      : [];
+  document.getElementById(
+    "football-season"
+  )?.addEventListener("change", event => {
+    footballSeason = Number(event.target.value);
+    footballMatchday = null;
 
-  return events.filter(event => {
-    const kind = String(
-      event.type || event.event_type || "GOAL"
-    ).toUpperCase();
+    renderFootballMatchdayControls();
+    loadFootballData();
+  });
 
-    const team = String(
-      event.team || event.side || ""
-    ).toLowerCase();
+  document.getElementById(
+    "football-matchday"
+  )?.addEventListener("change", event => {
+    footballMatchday = event.target.value
+      ? Number(event.target.value)
+      : null;
 
-    return (
-      ["GOAL","PENALTY","OWN_GOAL"].includes(kind) &&
-      team === side &&
-      (event.player || event.player_name)
-    );
+    renderFootballMatchdayControls();
+    loadFootballData();
+  });
+
+  document.getElementById(
+    "football-previous"
+  )?.addEventListener("click", () => {
+    if (previous === null) return;
+
+    footballMatchday = previous;
+    renderFootballMatchdayControls();
+    loadFootballData();
+  });
+
+  document.getElementById(
+    "football-next"
+  )?.addEventListener("click", () => {
+    if (next === null) return;
+
+    footballMatchday = next;
+    renderFootballMatchdayControls();
+    loadFootballData();
   });
 }
 
-function scorerHTML(events) {
-  return events.map(event => {
-    const player = escapeHTML(
-      event.player || event.player_name
-    );
-
-    const minute = event.minute != null
-      ? `${escapeHTML(event.minute)}'`
-      : "";
-
-    return `
-      <div class="scorer-line">
-        ⚽ ${player} ${minute}
-      </div>
-    `;
-  }).join("");
-}
-
-function footballMatchHTML(match) {
-  const home = match.home_team || {};
-  const away = match.away_team || {};
-
-  const homeName = escapeHTML(
-    home.short_name || home.name || "TBD"
-  );
-
-  const awayName = escapeHTML(
-    away.short_name || away.name || "TBD"
-  );
-
-  const finished = match.status === "FINISHED";
-
-  const homeScore = finished
-    ? (match.home_goals ?? "–")
-    : "–";
-
-  const awayScore = finished
-    ? (match.away_goals ?? "–")
-    : "–";
-
-  const homeEvents = scorerEvents(match,"home");
-  const awayEvents = scorerEvents(match,"away");
-
-  const hasEvents =
-    homeEvents.length > 0 ||
-    awayEvents.length > 0;
-
-  const competitionName =
-    footballCompetitions.find(
-      item => item[0] === match.competition_code
-    )?.[1] || match.competition_code || "Football";
-
-  const status = finished
-    ? "Full time"
-    : ["IN_PLAY","PAUSED"].includes(match.status)
-      ? "Live"
-      : "Scheduled";
-
-  const matchday = match.matchday != null
-    ? ` · MD ${escapeHTML(match.matchday)}`
-    : "";
-
-  return `
-    <article class="card football-match">
-
-      <div class="match-top">
-        <span class="match-competition">
-          ${escapeHTML(competitionName)}${matchday}
-        </span>
-
-        <span class="match-date">
-          ${footballDate(match.kickoff)}
-        </span>
-      </div>
-
-      <div class="match-body">
-
-        <div class="match-teams">
-
-          <div class="match-team">
-            ${teamBadge(home)}
-            <span class="team-name">
-              ${homeName}
-            </span>
-          </div>
-
-          <div class="match-team">
-            ${teamBadge(away)}
-            <span class="team-name">
-              ${awayName}
-            </span>
-          </div>
-
-        </div>
-
-        <div class="match-scores">
-          <div class="match-score">${homeScore}</div>
-          <div class="match-score">${awayScore}</div>
-        </div>
-
-        <div class="match-status">
-          <span class="match-status-main">
-            ${status}
-          </span>
-
-          ${!finished
-            ? `<span>${footballTime(match.kickoff)}</span>`
-            : ""}
-        </div>
-
-      </div>
-
-      ${hasEvents ? `
-        <div class="match-events">
-
-          <div class="match-events-side">
-            ${scorerHTML(homeEvents)}
-          </div>
-
-          <div class="match-events-side">
-            ${scorerHTML(awayEvents)}
-          </div>
-
-        </div>
-      ` : ""}
-
-    </article>
-  `;
-}
-
-function footballUpdateLabel(value) {
-  if (!value) return "Last updated: unavailable";
-  const date = new Date(value);
-  if (Number.isNaN(date.getTime())) return "Last updated: unavailable";
-  return "Last updated: " + new Intl.DateTimeFormat("en-US", {
-    year: "numeric", month: "long", day: "numeric",
-    hour: "numeric", minute: "2-digit", timeZoneName: "short"
-  }).format(date);
-}
-
-function renderFootballNavigation() {
-  const seasonSelect = document.getElementById("football-season");
-  const daySelect = document.getElementById("football-matchday");
-  const previous = document.getElementById("football-previous");
-  const next = document.getElementById("football-next");
-  if (!seasonSelect || !daySelect || !previous || !next) return;
-
-  const selectedSeason = footballSeasons.find(item => item.season === footballSeason);
-  const days = selectedSeason ? [...selectedSeason.matchdays].sort((a,b) => a-b) : [];
-
-  seasonSelect.innerHTML = footballSeasons.length
-    ? footballSeasons.map(item => `<option value="${item.season}" ${item.season === footballSeason ? "selected" : ""}>Season ${item.season}</option>`).join("")
-    : `<option value="">No seasons available</option>`;
-  seasonSelect.disabled = !footballSeasons.length;
-
-  daySelect.innerHTML = `<option value="">All matchdays</option>` +
-    days.map(day => `<option value="${day}" ${day === footballMatchday ? "selected" : ""}>Matchday ${day}</option>`).join("");
-  daySelect.disabled = !days.length;
-
-  const index = days.indexOf(footballMatchday);
-  previous.disabled = !days.length || (index === 0);
-  next.disabled = !days.length || (index === days.length - 1);
-  // When viewing all matchdays, either arrow starts at the relevant end.
-  if (index === -1 && days.length) {
-    previous.disabled = false;
-    next.disabled = false;
-  }
-}
-
-function setFootballUpdated(value) {
-  footballUpdatedAt = value || null;
-  const element = document.getElementById("football-updated");
-  if (element) {
-    element.textContent = footballUpdateLabel(footballUpdatedAt);
-    element.title = footballUpdatedAt || "No database update timestamp available";
-  }
-}
-
-async function loadFootballData(resetMatchday = false) {
-  const content = document.getElementById("football-content");
-  if (!content) return;
+async function loadFootballMatchdays() {
+  const competition = footballCompetition;
   const requestId = ++footballRequestId;
-  content.innerHTML = `<div class="football-message">Loading football data...</div>`;
 
   try {
-    if (resetMatchday || !footballSeasons.length) {
-      const [metadataResponse, previewResponse] = await Promise.all([
-        fetch(`/api/football?${new URLSearchParams({competition:footballCompetition,type:"matchdays"})}`),
-        fetch(`/api/football?${new URLSearchParams({competition:footballCompetition,type:footballType,limit:"20"})}`)
-      ]);
-      if (!metadataResponse.ok || !previewResponse.ok) throw new Error("Unable to load football navigation");
-      const [metadata, preview] = await Promise.all([metadataResponse.json(), previewResponse.json()]);
-      if (requestId !== footballRequestId || !document.getElementById("football-content")) return;
+    const params = new URLSearchParams({
+      competition,
+      type:"matchdays"
+    });
 
-      footballSeasons = Array.isArray(metadata.seasons) ? metadata.seasons : [];
-      const firstMatch = Array.isArray(preview.matches) ? preview.matches[0] : null;
-      const preferredSeason = firstMatch?.season_start;
-      footballSeason = footballSeasons.some(item => item.season === preferredSeason)
-        ? preferredSeason : (footballSeasons[0]?.season ?? null);
-      const selected = footballSeasons.find(item => item.season === footballSeason);
-      footballMatchday = selected?.matchdays.includes(firstMatch?.matchday)
-        ? firstMatch.matchday : null;
-      setFootballUpdated(metadata.last_updated || preview.last_updated);
-      renderFootballNavigation();
+    const response = await fetch(
+      `/api/football?${params}`
+    );
+
+    if (!response.ok) {
+      throw new Error(
+        `Matchday API HTTP ${response.status}`
+      );
     }
 
-    const params = new URLSearchParams({
-      competition:footballCompetition,
-      type:footballType,
-      limit:footballMatchday === null ? "20" : "100"
-    });
-    if (footballSeason !== null) params.set("season",String(footballSeason));
-    if (footballMatchday !== null) params.set("matchday",String(footballMatchday));
-
-    const response = await fetch(`/api/football?${params}`);
-    if (!response.ok) throw new Error(`Football API returned HTTP ${response.status}`);
     const data = await response.json();
-    if (requestId !== footballRequestId || !document.getElementById("football-content")) return;
 
-    setFootballUpdated(data.last_updated || footballUpdatedAt);
-    renderFootballNavigation();
-    if (!Array.isArray(data.matches) || !data.matches.length) {
-      content.innerHTML = `<div class="football-message">No ${footballType === "results" ? "completed results" : "upcoming fixtures"} are currently available for this selection.</div>`;
+    if (
+      requestId !== footballRequestId ||
+      !document.getElementById("football-content")
+    ) {
       return;
     }
-    content.innerHTML = `<div class="football-list">${data.matches.map(footballMatchHTML).join("")}</div>`;
+
+    footballSeasons = Array.isArray(data.seasons)
+      ? data.seasons
+      : [];
+
+    footballSeason = footballSeasons.length
+      ? footballSeasons[0].season
+      : null;
+
+    footballMatchday = null;
+    footballUpdatedAt = data.last_updated || null;
+
+    renderFootballMatchdayControls();
+    loadFootballData();
+
   } catch (error) {
+    console.error(error);
+
     if (requestId !== footballRequestId) return;
-    console.error("[Football Data]",error);
-    content.innerHTML = `<div class="football-message">Football data is temporarily unavailable. Please try again later.</div>`;
-    const updated = document.getElementById("football-updated");
-    if (updated && !footballUpdatedAt) updated.textContent = "Last updated: unavailable";
+
+    footballSeasons = [];
+    footballSeason = null;
+    footballMatchday = null;
+
+    const controls = document.getElementById(
+      "football-matchday-controls"
+    );
+
+    if (controls) controls.innerHTML = "";
+
+    loadFootballData();
+  }
+}
+
+/* ================================================
+   FOOTBALL DATA — FETCH MATCHES
+================================================ */
+
+async function loadFootballData() {
+  const content = document.getElementById(
+    "football-content"
+  );
+
+  if (!content) return;
+
+  const requestId = ++footballRequestId;
+
+  content.innerHTML = `
+    <div class="football-message">
+      Loading football data...
+    </div>
+  `;
+
+  const params = new URLSearchParams({
+    competition: footballCompetition,
+    type: footballType,
+    limit: footballMatchday !== null ? "100" : "20"
+  });
+
+  if (footballSeason !== null) {
+    params.set("season", String(footballSeason));
+  }
+
+  if (footballMatchday !== null) {
+    params.set("matchday", String(footballMatchday));
+  }
+
+  try {
+    const response = await fetch(
+      `/api/football?${params}`
+    );
+
+    if (!response.ok) {
+      throw new Error(
+        `Football API HTTP ${response.status}`
+      );
+    }
+
+    const data = await response.json();
+
+    if (
+      requestId !== footballRequestId ||
+      !document.getElementById("football-content")
+    ) {
+      return;
+    }
+
+    const updated = document.getElementById(
+      "football-updated"
+    );
+
+    if (updated) {
+      updated.textContent = footballUpdatedText(
+        data.last_updated || footballUpdatedAt
+      );
+    }
+
+    if (
+      !Array.isArray(data.matches) ||
+      data.matches.length === 0
+    ) {
+      content.innerHTML = `
+        <div class="football-message">
+          No ${footballType === "results"
+            ? "completed results"
+            : "upcoming fixtures"} available
+          for this selection.
+        </div>
+      `;
+
+      return;
+    }
+
+    content.innerHTML = `
+      <div class="football-list">
+        ${data.matches.map(footballMatchHTML).join("")}
+      </div>
+    `;
+
+  } catch (error) {
+    console.error(error);
+
+    if (requestId !== footballRequestId) return;
+
+    content.innerHTML = `
+      <div class="football-message">
+        Football data is temporarily unavailable.
+        Please try again later.
+      </div>
+    `;
   }
 }
 
 function initializeFootballPage() {
-  const selector = document.getElementById("football-competition");
+  const selector = document.getElementById(
+    "football-competition"
+  );
+
   if (!selector) return;
 
   selector.addEventListener("change", event => {
@@ -2085,143 +2304,546 @@ function initializeFootballPage() {
     footballMatchday = null;
     footballSeasons = [];
     footballUpdatedAt = null;
-    loadFootballData(true);
+
+    loadFootballMatchdays();
   });
 
-  document.querySelectorAll("[data-football-type]").forEach(button => {
+  document.querySelectorAll(
+    "[data-football-type]"
+  ).forEach(button => {
+
     button.addEventListener("click", () => {
       footballType = button.dataset.footballType;
-      document.querySelectorAll("[data-football-type]").forEach(tab => {
-        const active = tab.dataset.footballType === footballType;
-        tab.classList.toggle("active",active);
-        tab.setAttribute("aria-pressed",String(active));
+
+      document.querySelectorAll(
+        "[data-football-type]"
+      ).forEach(tab => {
+        const active =
+          tab.dataset.footballType === footballType;
+
+        tab.classList.toggle("active", active);
+
+        tab.setAttribute(
+          "aria-pressed",
+          String(active)
+        );
       });
-      loadFootballData(true);
+
+      loadFootballData();
     });
+
   });
 
-  document.getElementById("football-season").addEventListener("change", event => {
-    footballSeason = Number(event.target.value);
-    footballMatchday = null;
-    renderFootballNavigation();
-    loadFootballData();
-  });
-
-  document.getElementById("football-matchday").addEventListener("change", event => {
-    footballMatchday = event.target.value === "" ? null : Number(event.target.value);
-    renderFootballNavigation();
-    loadFootballData();
-  });
-
-  function moveMatchday(direction) {
-    const days = [...(footballSeasons.find(item => item.season === footballSeason)?.matchdays || [])].sort((a,b) => a-b);
-    if (!days.length) return;
-    const index = days.indexOf(footballMatchday);
-    const nextIndex = index === -1 ? (direction < 0 ? days.length - 1 : 0) : index + direction;
-    if (nextIndex < 0 || nextIndex >= days.length) return;
-    footballMatchday = days[nextIndex];
-    renderFootballNavigation();
-    loadFootballData();
-  }
-
-  document.getElementById("football-previous").addEventListener("click", () => moveMatchday(-1));
-  document.getElementById("football-next").addEventListener("click", () => moveMatchday(1));
-  loadFootballData(true);
+  loadFootballMatchdays();
 }
 
 /* ================================================
-   NAVIGATION AND RENDERING
+   OFFICIAL-SOURCE LEAGUE STANDINGS
 ================================================ */
 
-function render() {
-  let route =
-    location.hash.replace("#/","").split("?")[0] ||
-    "home";
+const standingsCompetitions = [
+  ["PL","Premier League"],
+  ["PD","La Liga"],
+  ["SA","Serie A"],
+  ["BL1","Bundesliga"],
+  ["FL1","Ligue 1"],
+  ["PPL","Primeira Liga"]
+];
 
-  const pages = {
-    home,
-    nominees,
-    rankings,
-    football:footballPage,
-    methodology
-  };
+let standingsCompetition = "PL";
+let standingsSeason = null;
+let standingsRequestId = 0;
 
-  if (!pages[route]) {
-    route = "home";
+function standingsPage() {
+  return pagehead(
+    "The league standings.",
+    "The official-source tables",
+    "League positions and statistics supplied by football-data.org, refreshed through the Ballon en Bois database."
+  ) + `
+    <section class="section wrap" style="padding-top:0">
+
+      <div class="standings-toolbar">
+
+        <div class="standings-field">
+          <label for="standings-competition">
+            Competition
+          </label>
+
+          <select
+            id="standings-competition"
+            class="control"
+          >
+            ${standingsCompetitions.map(([code,name]) => `
+              <option
+                value="${code}"
+                ${code === standingsCompetition ? "selected" : ""}
+              >
+                ${escapeHTML(name)}
+              </option>
+            `).join("")}
+          </select>
+        </div>
+
+        <div class="standings-field">
+          <label for="standings-season">
+            Season
+          </label>
+
+          <select
+            id="standings-season"
+            class="control"
+          >
+            <option value="">
+              Latest available
+            </option>
+          </select>
+        </div>
+
+      </div>
+
+      <div
+        id="standings-updated"
+        class="standings-updated"
+      >
+        Loading latest standings...
+      </div>
+
+      <div
+        id="standings-content"
+        aria-live="polite"
+      >
+        <div class="football-message">
+          Loading league standings...
+        </div>
+      </div>
+
+      <p class="standings-source">
+        Data provided by football-data.org.
+        League positions and statistics are supplied
+        by the data provider and are not independently
+        recalculated by Ballon en Bois.
+      </p>
+
+      <p class="notice">
+        Tables reflect the most recent successful
+        database import. They may differ from live
+        matchday standings until the next refresh.
+        Official league-specific ranking and
+        tiebreaker rules are reflected only to the
+        extent supported by the data provider.
+      </p>
+
+    </section>
+  `;
+}
+
+function standingsSignedNumber(value) {
+  const number = Number(value) || 0;
+
+  return number > 0
+    ? `+${number}`
+    : String(number);
+}
+
+function standingsCrest(team) {
+  const id = Number(team?.id);
+  const crest = String(team?.crest || "");
+
+  const validCrest =
+    Number.isInteger(id) &&
+    id > 0 &&
+    /^https:\/\/crests\.football-data\.org\/[0-9]+\.(png|svg)$/i.test(crest);
+
+  if (!validCrest) {
+    return `
+      <span class="team-fallback">
+        ${escapeHTML(
+          team?.tla ||
+          (team?.short_name || team?.name || "?")
+            .slice(0,3)
+            .toUpperCase()
+        )}
+      </span>
+    `;
   }
 
-  document.getElementById("app").innerHTML =
-    pages[route]();
+  return `
+    <img
+      src="${escapeHTML(crest)}"
+      alt=""
+      loading="lazy"
+      referrerpolicy="no-referrer"
+    >
+  `;
+}
 
-  document
-    .querySelectorAll("[data-route]")
-    .forEach(link => {
-      link.classList.toggle(
-        "active",
-        link.dataset.route === route
+function standingsTableHTML(data) {
+  const rows = Array.isArray(data.standings)
+    ? data.standings
+    : [];
+
+  if (!rows.length) {
+    return `
+      <div class="football-message">
+        No standings are available for this
+        competition and season.
+      </div>
+    `;
+  }
+
+  return `
+    <div class="standings-scroll">
+
+      <table class="standings-table">
+
+        <thead>
+          <tr>
+            <th scope="col">Pos</th>
+            <th scope="col">Club</th>
+            <th scope="col">P</th>
+            <th scope="col">W</th>
+            <th scope="col">D</th>
+            <th scope="col">L</th>
+            <th scope="col">GF</th>
+            <th scope="col">GA</th>
+            <th scope="col">GD</th>
+            <th scope="col">Pts</th>
+          </tr>
+        </thead>
+
+        <tbody>
+
+          ${rows.map(entry => {
+            const team = entry.team || {};
+
+            return `
+              <tr>
+
+                <td>
+                  <strong>
+                    ${escapeHTML(entry.position)}
+                  </strong>
+                </td>
+
+                <td>
+                  <div class="standings-club">
+
+                    ${standingsCrest(team)}
+
+                    <strong>
+                      ${escapeHTML(
+                        team.short_name ||
+                        team.name ||
+                        "Unknown club"
+                      )}
+                    </strong>
+
+                  </div>
+                </td>
+
+                <td>${escapeHTML(entry.played_games)}</td>
+                <td>${escapeHTML(entry.won)}</td>
+                <td>${escapeHTML(entry.drawn)}</td>
+                <td>${escapeHTML(entry.lost)}</td>
+                <td>${escapeHTML(entry.goals_for)}</td>
+                <td>${escapeHTML(entry.goals_against)}</td>
+
+                <td>
+                  ${escapeHTML(
+                    standingsSignedNumber(
+                      entry.goal_difference
+                    )
+                  )}
+                </td>
+
+                <td class="standings-points">
+                  ${escapeHTML(entry.points)}
+                </td>
+
+              </tr>
+            `;
+          }).join("")}
+
+        </tbody>
+
+      </table>
+
+    </div>
+  `;
+}
+
+async function loadStandings() {
+  const content = document.getElementById(
+    "standings-content"
+  );
+
+  if (!content) return;
+
+  const requestId = ++standingsRequestId;
+
+  content.innerHTML = `
+    <div class="football-message">
+      Loading league standings...
+    </div>
+  `;
+
+  const params = new URLSearchParams({
+    competition: standingsCompetition,
+    type: "standings"
+  });
+
+  if (standingsSeason !== null) {
+    params.set(
+      "season",
+      String(standingsSeason)
+    );
+  }
+
+  try {
+    const response = await fetch(
+      `/api/football?${params}`
+    );
+
+    if (!response.ok) {
+      throw new Error(
+        `Standings API HTTP ${response.status}`
       );
+    }
+
+    const data = await response.json();
+
+    if (
+      requestId !== standingsRequestId ||
+      !document.getElementById("standings-content")
+    ) {
+      return;
+    }
+
+    const updated = document.getElementById(
+      "standings-updated"
+    );
+
+    if (updated) {
+      const seasonLabel = data.season
+        ? `Season ${data.season}–${String(
+            data.season + 1
+          ).slice(-2)} · `
+        : "";
+
+      updated.textContent =
+        seasonLabel +
+        footballUpdatedText(data.last_updated);
+    }
+
+    const seasonSelect = document.getElementById(
+      "standings-season"
+    );
+
+    if (seasonSelect) {
+      const availableYear = data.season;
+
+      seasonSelect.innerHTML = `
+        <option value="">
+          Latest available
+        </option>
+
+        ${availableYear ? `
+          <option
+            value="${availableYear}"
+            ${standingsSeason === availableYear
+              ? "selected"
+              : ""}
+          >
+            ${availableYear}–${String(
+              availableYear + 1
+            ).slice(-2)}
+          </option>
+        ` : ""}
+      `;
+    }
+
+    content.innerHTML = standingsTableHTML(data);
+
+  } catch (error) {
+    console.error(error);
+
+    if (requestId !== standingsRequestId) return;
+
+    content.innerHTML = `
+      <div class="football-message">
+        League standings are temporarily
+        unavailable. Please try again later.
+      </div>
+    `;
+  }
+}
+
+function initializeStandingsPage() {
+  const selector = document.getElementById(
+    "standings-competition"
+  );
+
+  if (!selector) return;
+
+  selector.addEventListener("change", event => {
+    standingsCompetition = event.target.value;
+    standingsSeason = null;
+    loadStandings();
+  });
+
+  document.getElementById(
+    "standings-season"
+  )?.addEventListener("change", event => {
+    standingsSeason = event.target.value
+      ? Number(event.target.value)
+      : null;
+
+    loadStandings();
+  });
+
+  loadStandings();
+}
+
+/* ================================================
+   FILTER CONTROLS
+================================================ */
+
+function initializeFilters(route) {
+  const league = document.getElementById("league");
+  const category = document.getElementById("category");
+  const search = document.getElementById("search");
+  const sortControl = document.getElementById("sort");
+
+  if (league) {
+    league.addEventListener("change", event => {
+      filters.league = event.target.value;
+      drawResults(route);
     });
+  }
+
+  if (category) {
+    category.addEventListener("change", event => {
+      filters.category = event.target.value;
+      drawResults(route);
+    });
+  }
+
+  if (search) {
+    search.addEventListener("input", event => {
+      filters.search = event.target.value;
+      drawResults(route);
+    });
+  }
+
+  if (sortControl) {
+    sortControl.value = sort;
+
+    sortControl.addEventListener("change", event => {
+      sort = event.target.value;
+      drawResults(route);
+    });
+  }
+
+  drawResults(route);
+}
+
+/* ================================================
+   ROUTER AND NAVIGATION
+================================================ */
+
+const pages = {
+  home,
+  nominees,
+  rankings,
+  football: footballPage,
+  standings: standingsPage,
+  methodology
+};
+
+function currentRoute() {
+  const hash = window.location.hash
+    .replace(/^#\/?/, "")
+    .split(/[/?]/)[0];
+
+  return pages[hash] ? hash : "home";
+}
+
+function render() {
+  const route = currentRoute();
+  const app = document.getElementById("app");
+
+  if (!app) return;
+
+  /*
+    Invalidate pending API requests whenever
+    the visitor changes pages.
+  */
+
+  footballRequestId++;
+  standingsRequestId++;
+
+  app.innerHTML = pages[route]();
+
+  document.querySelectorAll(
+    "[data-route]"
+  ).forEach(link => {
+    link.classList.toggle(
+      "active",
+      link.dataset.route === route
+    );
+  });
 
   const links = document.getElementById("links");
   const menu = document.getElementById("menu");
 
-  links.classList.remove("open");
-  menu.setAttribute("aria-expanded","false");
+  if (links) {
+    links.classList.remove("open");
+  }
 
-  if (
-    route === "nominees" ||
-    route === "rankings"
-  ) {
-    drawResults(route);
+  if (menu) {
+    menu.setAttribute(
+      "aria-expanded",
+      "false"
+    );
+  }
 
-    ["league","category","search"].forEach(id => {
-      document.getElementById(id).addEventListener(
-        id === "search" ? "input" : "change",
-        event => {
-          filters[id] = event.target.value;
-          drawResults(route);
-        }
-      );
-    });
-
-    if (route === "rankings") {
-      const sortSelector = document.getElementById(
-        "sort"
-      );
-
-      sortSelector.value = sort;
-
-      sortSelector.addEventListener(
-        "change",
-        event => {
-          sort = event.target.value;
-          drawResults(route);
-        }
-      );
-    }
+  if (route === "nominees" || route === "rankings") {
+    initializeFilters(route);
   }
 
   if (route === "football") {
     initializeFootballPage();
   }
 
-  window.scrollTo(0,0);
+  if (route === "standings") {
+    initializeStandingsPage();
+  }
+
+  window.scrollTo({
+    top: 0,
+    behavior: "instant"
+  });
 }
 
-document.getElementById("menu").onclick = () => {
-  const links = document.getElementById("links");
-  const isOpen = links.classList.toggle("open");
+document.getElementById("menu")
+  ?.addEventListener("click", () => {
+    const links = document.getElementById("links");
+    const menu = document.getElementById("menu");
 
-  document.getElementById("menu").setAttribute(
-    "aria-expanded",
-    String(isOpen)
-  );
-};
+    if (!links || !menu) return;
 
-window.addEventListener("hashchange",render);
+    const open = links.classList.toggle("open");
+
+    menu.setAttribute(
+      "aria-expanded",
+      String(open)
+    );
+  });
+
+window.addEventListener("hashchange", render);
 
 render();
-</script>
 
+</script>
 </body>
 </html>
