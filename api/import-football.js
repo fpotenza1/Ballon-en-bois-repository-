@@ -8,6 +8,10 @@
   Match data: 9 competitions
   Standings: 6 domestic leagues
 
+  Club crests are saved to fd_teams automatically.
+  Existing crests are preserved when a provider response
+  does not include an image URL.
+
   Standings are provided by football-data.org.
   No league positions or points are calculated locally.
 */
@@ -76,6 +80,100 @@ async function saveRows(table, rows, conflict) {
       );
     }
   }
+}
+
+/*
+  Read existing team crest URLs.
+
+  This protects saved crests when the football
+  provider returns a team without a crest.
+*/
+
+async function existingTeamCrests(teamIds) {
+  const crests = new Map();
+
+  if (!teamIds.length) {
+    return crests;
+  }
+
+  const { origin, key } = supabaseCredentials();
+
+  for (let i = 0; i < teamIds.length; i += 100) {
+    const batch = teamIds.slice(i, i + 100);
+
+    const endpoint = new URL(
+      `${origin}/rest/v1/fd_teams`
+    );
+
+    endpoint.searchParams.set(
+      "select",
+      "provider_id,crest"
+    );
+
+    endpoint.searchParams.set(
+      "provider_id",
+      `in.(${batch.join(",")})`
+    );
+
+    const response = await fetch(endpoint, {
+      headers: {
+        apikey: key,
+        Authorization: `Bearer ${key}`,
+        Accept: "application/json",
+      },
+    });
+
+    if (!response.ok) {
+      const details = await response.text();
+
+      throw new Error(
+        `Supabase existing team crests: ` +
+        `HTTP ${response.status} ` +
+        details.slice(0, 300)
+      );
+    }
+
+    const rows = await response.json();
+
+    for (const row of rows) {
+      if (row.crest) {
+        crests.set(row.provider_id, row.crest);
+      }
+    }
+  }
+
+  return crests;
+}
+
+/*
+  Save team rows while preserving known crests.
+
+  Crest priority:
+  1. Current provider response
+  2. Previously saved database value
+  3. Null for a genuinely new team without a crest
+*/
+
+async function saveTeamsPreservingCrests(rows) {
+  if (!rows.length) return;
+
+  const ids = rows.map(row => row.provider_id);
+
+  const savedCrests = await existingTeamCrests(ids);
+
+  const protectedRows = rows.map(row => ({
+    ...row,
+    crest:
+      row.crest ||
+      savedCrests.get(row.provider_id) ||
+      null,
+  }));
+
+  await saveRows(
+    "fd_teams",
+    protectedRows,
+    "provider_id"
+  );
 }
 
 function retryDelay(response, attempt) {
@@ -147,7 +245,7 @@ async function footballRequest(endpoint, code) {
 }
 
 /*
-  EXISTING MATCH IMPORT
+  MATCH IMPORT
 */
 
 async function getMatches({ code, season }) {
@@ -177,6 +275,12 @@ async function getMatches({ code, season }) {
   return data.matches;
 }
 
+/*
+  TEAM ROW
+
+  The crest field is now included.
+*/
+
 function teamRow(team) {
   if (!team || !Number.isInteger(team.id)) {
     return null;
@@ -184,12 +288,16 @@ function teamRow(team) {
 
   return {
     provider_id: team.id,
+
     name:
       team.name ||
       team.shortName ||
       `Team ${team.id}`,
+
     short_name: team.shortName || null,
     tla: team.tla || null,
+    crest: team.crest || null,
+
     updated_at: new Date().toISOString(),
   };
 }
@@ -288,8 +396,7 @@ function standingsRows(data, code) {
 
   /*
     Domestic leagues normally provide TOTAL,
-    HOME and AWAY tables. We import TOTAL only
-    for the first release.
+    HOME and AWAY tables. We import TOTAL only.
   */
 
   const total = data.standings.find(
@@ -352,6 +459,13 @@ function standingsRows(data, code) {
   return rows;
 }
 
+/*
+  IMPORT MATCHES AND TEAMS
+
+  Existing functionality is preserved.
+  Team crests are now imported automatically.
+*/
+
 async function importMatches(competition) {
   const { code, name } = competition;
 
@@ -366,6 +480,20 @@ async function importMatches(competition) {
       const row = teamRow(team);
 
       if (row) {
+        const previous = teams.get(row.provider_id);
+
+        /*
+          If multiple matches contain the same team,
+          retain a crest found in any of them.
+        */
+
+        if (
+          previous?.crest &&
+          !row.crest
+        ) {
+          row.crest = previous.crest;
+        }
+
         teams.set(row.provider_id, row);
       }
     }
@@ -381,10 +509,8 @@ async function importMatches(competition) {
     "code"
   );
 
-  await saveRows(
-    "fd_teams",
-    [...teams.values()],
-    "provider_id"
+  await saveTeamsPreservingCrests(
+    [...teams.values()]
   );
 
   await saveRows(
@@ -406,8 +532,16 @@ async function importMatches(competition) {
   };
 }
 
+/*
+  IMPORT OFFICIAL STANDINGS
+
+  Standings also provide club crests.
+  We use these to supplement fd_teams.
+*/
+
 async function importStandings(competition) {
   const data = await getStandings(competition);
+
   const rows = standingsRows(
     data,
     competition.code
@@ -418,6 +552,27 @@ async function importStandings(competition) {
     rows,
     "competition_code,season_start,standing_type,team_id"
   );
+
+  /*
+    Refresh the teams table from the same
+    official-source standings response.
+
+    This is especially useful when the match
+    response does not include club crests.
+  */
+
+  const total = data.standings.find(
+    item => item.type === "TOTAL" &&
+      Array.isArray(item.table)
+  );
+
+  if (total) {
+    const teamRows = total.table
+      .map(entry => teamRow(entry.team))
+      .filter(Boolean);
+
+    await saveTeamsPreservingCrests(teamRows);
+  }
 
   console.log(
     `[Football Standings] ${competition.code}: ` +
@@ -479,7 +634,7 @@ module.exports = async function handler(req, res) {
 
     /*
       Match imports and standings imports
-      are independent.
+      remain independent.
 
       A failed standings request will not
       prevent the matches from being saved.
