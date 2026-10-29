@@ -2053,155 +2053,43 @@ function availableFootballMatchdays() {
    FOOTBALL DATA — REFRESH MATCHDAY AVAILABILITY
 ================================================ */
 
-async function refreshFootballMatchdayAvailability() {
-  const competition = footballCompetition;
-  const season = footballSeason;
-  const requestId = ++footballRequestId;
+
+function refreshFootballMatchdayAvailability() {
+  // Matchday availability now comes directly from
+  // the API's complete, status-based matchday data.
+
+  ++footballRequestId;
+
+  const seasonRecord = footballSeasons.find(
+    item => Number(item.season) === footballSeason
+  );
+
+  const results = seasonRecord?.results_matchdays || [];
+  const fixtures = seasonRecord?.fixtures_matchdays || [];
+
+  footballMatchdayAvailability = {
+    results: results
+      .map(Number)
+      .filter(Number.isInteger)
+      .sort((a, b) => a - b),
+
+    fixtures: fixtures
+      .map(Number)
+      .filter(Number.isInteger)
+      .sort((a, b) => a - b)
+  };
+
+  footballDefaultMatchdays = {
+    results:
+      seasonRecord?.latest_result_matchday ?? null,
+
+    fixtures:
+      seasonRecord?.next_fixture_matchday ?? null
+  };
 
   footballMatchday = null;
-  footballMatchdayAvailability = {
-    results: [],
-    fixtures: []
-  };
 
-  const allDays = allFootballMatchdays();
-
-  if (!allDays.length || season === null) {
-    renderFootballMatchdayControls();
-    showFootballEmptyMessage();
-    return;
-  }
-
-  const makeUrl = type => {
-    const params = new URLSearchParams({
-      competition,
-      type,
-      season: String(season),
-      limit: "100"
-    });
-
-    return `/api/football?${params}`;
-  };
-
-  try {
-    const [resultsResponse, fixturesResponse] =
-      await Promise.all([
-        fetch(makeUrl("results")),
-        fetch(makeUrl("fixtures"))
-      ]);
-
-    if (!resultsResponse.ok || !fixturesResponse.ok) {
-      throw new Error("Could not load matchday availability.");
-    }
-
-    const [resultsData, fixturesData] =
-      await Promise.all([
-        resultsResponse.json(),
-        fixturesResponse.json()
-      ]);
-
-    if (
-      requestId !== footballRequestId ||
-      competition !== footballCompetition ||
-      season !== footballSeason ||
-      !document.getElementById("football-content")
-    ) {
-      return;
-    }
-
-    const validDays = new Set(allDays);
-
-    const results = Array.isArray(resultsData.matches)
-      ? resultsData.matches
-      : [];
-
-    const fixtures = Array.isArray(fixturesData.matches)
-      ? fixturesData.matches
-      : [];
-
-    const resultDays = results
-      .map(match => Number(match.matchday))
-      .filter(day => validDays.has(day));
-
-    const fixtureDays = fixtures
-      .map(match => Number(match.matchday))
-      .filter(day => validDays.has(day));
-
-    // Completed matches and future matches are
-    // independent. A matchday can appear in both tabs.
-    //
-    // Include earlier result matchdays even when the
-    // latest 100 results do not cover the full season.
-    const latestResultDay = resultDays.length
-      ? Math.max(...resultDays)
-      : null;
-
-    const resultsAvailable = latestResultDay === null
-      ? []
-      : allDays.filter(day => day <= latestResultDay);
-
-    // Include future matchdays beyond the first 100
-    // fixtures returned by the API.
-    const earliestFixtureDay = fixtureDays.length
-      ? Math.min(...fixtureDays)
-      : null;
-
-    const fixturesAvailable = earliestFixtureDay === null
-      ? []
-      : allDays.filter(day =>
-          day >= earliestFixtureDay ||
-          fixtureDays.includes(day)
-        );
-
-    footballMatchdayAvailability = {
-      results: resultsAvailable,
-      fixtures: fixturesAvailable
-    };
-
-    // The results API is ordered by latest kickoff.
-    // The fixtures API is ordered by earliest kickoff.
-    // Their first entries identify the correct defaults.
-    const latestResultMatchday =
-      Number(results[0]?.matchday);
-
-    const nextFixtureMatchday =
-      Number(fixtures[0]?.matchday);
-
-    footballDefaultMatchdays = {
-      results: validDays.has(latestResultMatchday)
-        ? latestResultMatchday
-        : resultsAvailable[resultsAvailable.length - 1] ?? null,
-
-      fixtures: validDays.has(nextFixtureMatchday)
-        ? nextFixtureMatchday
-        : fixturesAvailable[0] ?? null
-    };
-
-    selectDefaultFootballMatchday();
-
-  } catch (error) {
-    console.error(error);
-
-    if (
-      requestId !== footballRequestId ||
-      competition !== footballCompetition ||
-      season !== footballSeason
-    ) {
-      return;
-    }
-
-    footballMatchdayAvailability = {
-      results: allDays,
-      fixtures: allDays
-    };
-
-    footballDefaultMatchdays = {
-      results: allDays[allDays.length - 1] ?? null,
-      fixtures: allDays[0] ?? null
-    };
-
-    selectDefaultFootballMatchday();
-  }
+  selectDefaultFootballMatchday();
 }
 
 let footballDefaultMatchdays = {
