@@ -1806,13 +1806,39 @@ function footballTeamInitials(team) {
   ).toUpperCase();
 }
 
+
 function footballTeamBadge(team) {
+  const crest = String(team?.crest || "");
+
+  const validCrest =
+    /^https:\/\/crests\.football-data\.org\/[0-9]+\.(png|svg)$/i.test(crest);
+
+  if (validCrest) {
+    return `
+      <img
+        class="team-logo"
+        src="${escapeHTML(crest)}"
+        alt=""
+        loading="lazy"
+        referrerpolicy="no-referrer"
+        onerror="this.onerror=null;this.style.display='none';this.nextElementSibling.style.display='grid';"
+      >
+      <span
+        class="team-fallback"
+        style="display:none"
+      >
+        ${escapeHTML(footballTeamInitials(team))}
+      </span>
+    `;
+  }
+
   return `
     <span class="team-fallback">
       ${escapeHTML(footballTeamInitials(team))}
     </span>
   `;
 }
+
 
 function footballMatchHTML(match) {
   const home = match.home_team || {};
