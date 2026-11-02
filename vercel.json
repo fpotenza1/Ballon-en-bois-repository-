@@ -1,9 +1,9 @@
+
 {
   "cleanUrls": true,
-  "crons": [
-    {
-      "path": "/api/import-football",
-      "schedule": "0 6 * * *"
+  "functions": {
+    "api/import-football.js": {
+      "maxDuration": 300
     }
-  ]
+  }
 }
