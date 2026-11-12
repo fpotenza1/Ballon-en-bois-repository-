@@ -459,6 +459,78 @@ function standingsRows(data, code) {
   return rows;
 }
 
+function validateStandings(rows, code) {
+  if (!Array.isArray(rows) || rows.length < 2) {
+    throw new Error(`${code}: invalid standings table`);
+  }
+
+  const positions = new Set();
+  const teams = new Set();
+
+  let totalWins = 0;
+  let totalLosses = 0;
+  let totalGoalsFor = 0;
+  let totalGoalsAgainst = 0;
+
+  for (const row of rows) {
+    const {
+      team_id,
+      position,
+      played_games,
+      won,
+      drawn,
+      lost,
+      goals_for,
+      goals_against,
+      goal_difference,
+      points
+    } = row;
+
+    if (teams.has(team_id) || positions.has(position)) {
+      throw new Error(`${code}: duplicate team or position`);
+    }
+
+    teams.add(team_id);
+    positions.add(position);
+
+    const values = [
+      played_games, won, drawn, lost,
+      goals_for, goals_against, points
+    ];
+
+    if (values.some(v => !Number.isInteger(v) || v < 0)) {
+      throw new Error(`${code}: invalid numeric standings value`);
+    }
+
+    if (played_games !== won + drawn + lost) {
+      throw new Error(`${code}: games played mismatch for team ${team_id}`);
+    }
+
+    if (goal_difference !== goals_for - goals_against) {
+      throw new Error(`${code}: goal difference mismatch for team ${team_id}`);
+    }
+
+    if (points !== 3 * won + drawn) {
+      throw new Error(`${code}: points mismatch for team ${team_id}`);
+    }
+
+    totalWins += won;
+    totalLosses += lost;
+    totalGoalsFor += goals_for;
+    totalGoalsAgainst += goals_against;
+  }
+
+  if (totalWins !== totalLosses) {
+    throw new Error(`${code}: total wins and losses do not reconcile`);
+  }
+
+  if (totalGoalsFor !== totalGoalsAgainst) {
+    throw new Error(`${code}: goals scored and conceded do not reconcile`);
+  }
+
+  console.log(`[Football Validation] ${code}: standings passed`);
+}
+
 /*
   IMPORT MATCHES AND TEAMS
 
