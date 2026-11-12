@@ -333,6 +333,62 @@ function matchRow(match, code) {
   };
 }
 
+
+function validateMatches(rows, code) {
+  if (!Array.isArray(rows) || rows.length === 0) {
+    throw new Error(`${code}: no matches to validate`);
+  }
+
+  const matchIds = new Set();
+  let finishedCount = 0;
+
+  for (const match of rows) {
+    if (!Number.isInteger(match.provider_id)) {
+      throw new Error(`${code}: invalid match ID`);
+    }
+
+    if (matchIds.has(match.provider_id)) {
+      throw new Error(`${code}: duplicate match ${match.provider_id}`);
+    }
+
+    matchIds.add(match.provider_id);
+
+    if (match.status !== "FINISHED") {
+      continue;
+    }
+
+    finishedCount++;
+
+    if (
+      !Number.isInteger(match.home_team_id) ||
+      !Number.isInteger(match.away_team_id) ||
+      match.home_team_id === match.away_team_id
+    ) {
+      throw new Error(
+        `${code}: invalid teams in finished match ${match.provider_id}`
+      );
+    }
+
+    if (
+      !Number.isInteger(match.home_goals) ||
+      !Number.isInteger(match.away_goals) ||
+      match.home_goals < 0 ||
+      match.away_goals < 0
+    ) {
+      throw new Error(
+        `${code}: invalid final score in match ${match.provider_id}`
+      );
+    }
+  }
+
+  console.log(
+    `[Football Validation] ${code}: ` +
+    `${rows.length} matches checked, ` +
+    `${finishedCount} finished matches validated`
+  );
+}
+
+
 /*
   OFFICIAL-SOURCE STANDINGS IMPORT
 */
