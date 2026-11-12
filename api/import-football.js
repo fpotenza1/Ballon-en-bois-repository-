@@ -641,11 +641,17 @@ async function importMatches(competition) {
     [...teams.values()]
   );
 
+  
+  const matchRows = matches.map(match => matchRow(match, code));
+
+  validateMatches(matchRows, code);
+
   await saveRows(
     "fd_matches",
-    matches.map(match => matchRow(match, code)),
+    matchRows,
     "provider_id"
   );
+
 
   console.log(
     `[Football Import] ${code}: ` +
