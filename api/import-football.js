@@ -709,7 +709,7 @@ module.exports = async function handler(req, res) {
     `Standings failures: ${standingsFailures.length}.`
   );
 
-  return res.status(completed ? 200 : 207).json({
+  return res.status(completed ? 200 : 500).json({
     completed,
     match_imports_successful:
       matchFailures.length === 0,
