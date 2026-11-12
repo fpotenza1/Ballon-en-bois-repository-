@@ -618,7 +618,9 @@ async function importStandings(competition) {
     data,
     competition.code
   );
-
+  
+  validateStandings(rows, competition.code);
+  
   await saveRows(
     "fd_standings",
     rows,
