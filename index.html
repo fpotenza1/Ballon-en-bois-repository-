@@ -1888,20 +1888,22 @@ function footballMatchHTML(match) {
       <div class="match-body">
 
         <div class="match-teams">
-
-          <div class="match-team">
-            ${footballTeamBadge(home)}
-            <span class="team-name">
-              ${escapeHTML(footballTeamName(home))}
-            </span>
-          </div>
-
-          <div class="match-team">
-            ${footballTeamBadge(away)}
-            <span class="team-name">
-              ${escapeHTML(footballTeamName(away))}
-            </span>
-          </div>
+         <a class="match-team"            
+         href="${Number.isInteger(Number(home.provider_id)) && Number(home.provider_id) > 0 ? `#/team/${Number(home.provider_id)}` : '#/football'}"
+            title="View ${escapeHTML(footballTeamName(home))} team profile">
+           ${footballTeamBadge(home)}
+           <span class="team-name">
+             ${escapeHTML(footballTeamName(home))}
+           </span>
+         </a>          
+         <a class="match-team"            
+         href="${Number.isInteger(Number(away.provider_id)) && Number(away.provider_id) > 0 ? `#/team/${Number(away.provider_id)}` : '#/football'}"
+            title="View ${escapeHTML(footballTeamName(away))} team profile">
+           ${footballTeamBadge(away)}
+           <span class="team-name">
+             ${escapeHTML(footballTeamName(away))}
+           </span>
+         </a>
 
         </div>
 
@@ -2690,20 +2692,20 @@ function standingsTableHTML(data) {
                   </strong>
                 </td>
 
-                <td>
-                  <div class="standings-club">
-
+                <td>                  
+                  <a class="standings-club"
+                  href="${Number.isInteger(Number(team.id)) && Number(team.id) > 0 ? `#/team/${Number(team.id)}` : '#/standings'}"
+                     title="View ${escapeHTML(team.short_name || team.name || 'Unknown club')} team profile">                  
                     ${standingsCrest(team)}
-
+                  
                     <strong>
                       ${escapeHTML(
                         team.short_name ||
                         team.name ||
                         "Unknown club"
                       )}
-                    </strong>
-
-                  </div>
+                    </strong>                  
+                  </a>
                 </td>
 
                 <td>${escapeHTML(entry.played_games)}</td>
@@ -2916,19 +2918,75 @@ function initializeFilters(route) {
    ROUTER AND NAVIGATION
 ================================================ */
 
+function teamPage() {
+  const parts = window.location.hash
+    .replace(/^#\//, "")
+    .split("/");
+
+  const teamId = Number(parts[1]);
+
+  if (!Number.isInteger(teamId) || teamId <= 0) {
+    return pagehead(
+      "Team not found.",
+      "Club profiles",
+      "The requested team could not be identified."
+    ) + `
+      <section class="section wrap">
+        <a class="btn btn-yellow" href="#/standings">
+          Back to standings
+        </a>
+      </section>
+    `;
+  }
+
+  return pagehead(
+    "Team profile.",
+    "Ballon en Bois · Club profiles",
+    "Detailed team information will be available soon."
+  ) + `
+    <section class="section wrap" style="padding-top:0">
+      <div class="card" style="padding:30px">
+        <div class="card-label">
+          TEAM ID ${teamId}
+        </div>
+
+        <h2 class="card-title">
+          Team profile coming soon
+        </h2>
+
+        <p class="card-text">
+          We are preparing dedicated club pages.
+          Results, statistics, squad information and
+          other details may be added in a future update.
+        </p>
+
+        <a class="btn" href="#/standings"
+           style="margin-top:20px">
+          Back to standings
+        </a>
+      </div>
+    </section>
+  `;
+}
+
 const pages = {
   home,
   nominees,
   rankings,
   football: footballPage,
   standings: standingsPage,
-  methodology
+  methodology,
+  team: teamPage
 };
 
 function currentRoute() {
   const hash = window.location.hash
-    .replace(/^#\/?/, "")
+    .replace(/^#\//, "")
     .split(/[/?]/)[0];
+
+  if (hash === "team") {
+    return "team";
+  }
 
   return pages[hash] ? hash : "home";
 }
