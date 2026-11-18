@@ -2298,7 +2298,7 @@ async function loadFootballMatchdays() {
     });
 
     const response = await fetch(
-      `/api/football?${params}`
+      `/api/football-preview?${params}`
     );
 
     if (!response.ok) {
@@ -2389,7 +2389,7 @@ async function loadFootballData() {
 
   try {
     const response = await fetch(
-      `/api/football?${params}`
+      `/api/football-preview?${params}`
     );
 
     if (!response.ok) {
@@ -2768,7 +2768,7 @@ async function loadStandings() {
 
   try {
     const response = await fetch(
-      `/api/football?${params}`
+      `/api/football-preview?${params}`
     );
 
     if (!response.ok) {
