@@ -2982,6 +2982,37 @@ function initializeTeamPage() {
     return;
   }
 
+const supportedCompetitions = [
+  "PL",
+  "PD",
+  "SA",
+  "BL1",
+  "FL1",
+  "PPL"
+];
+
+const requestedCompetition =
+  new URLSearchParams(
+    window.location.hash.split("?")[1] || ""
+  ).get("competition");
+
+const teamCompetition =
+  supportedCompetitions.includes(requestedCompetition)
+    ? requestedCompetition
+    : "PL";
+
+const competitionNames = {
+  PL: "Premier League",
+  PD: "La Liga",
+  SA: "Serie A",
+  BL1: "Bundesliga",
+  FL1: "Ligue 1",
+  PPL: "Primeira Liga"
+};
+
+const teamCompetitionName =
+  competitionNames[teamCompetition];
+
   
 const container = document.getElementById(
   "team-profile-content"
@@ -2995,7 +3026,7 @@ container.innerHTML = `
   </div>
 `;
 
-fetch("/api/football-preview?competition=PL&type=standings")
+fetch(`/api/football-preview?competition=${teamCompetition}&type=standings`)
   .then(response => {
     if (!response.ok) {
       throw new Error("Club data unavailable");
@@ -3004,7 +3035,7 @@ fetch("/api/football-preview?competition=PL&type=standings")
   })
   .then(data => {
     if (document.getElementById("team-profile-content") !== container ||
-       window.location.hash !== `#/team/${teamId}`) {
+       window.location.hash.split("?")[0] !== `#/team/${teamId}`) {
      return;
     }
     const rows = Array.isArray(data.standings)
@@ -3045,9 +3076,11 @@ const stats = [
 container.innerHTML = `
   <div class="card" style="padding:30px">
 
-    <div class="card-label">
-      PREMIER LEAGUE · 2026–27
-    </div>
+    
+   <div class="card-label">
+     ${escapeHTML(teamCompetitionName.toUpperCase())} · 2026–27
+   </div>
+
 
     <div style="
       display:flex;
@@ -3120,7 +3153,7 @@ container.innerHTML = `
   .catch(error => {
   if (
     document.getElementById("team-profile-content") !== container ||
-    window.location.hash !== `#/team/${teamId}`
+    window.location.hash.split("?")[0] !== `#/team/${teamId}`
   ) {
     return;
   }
