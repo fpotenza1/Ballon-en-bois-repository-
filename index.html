@@ -2945,9 +2945,10 @@ function teamPage() {
     "Detailed team information will be available soon."
   ) + `
     <section class="section wrap" style="padding-top:0">
+     <div id="team-profile-content">
       <div class="card" style="padding:30px">
-        <div class="card-label">
-          TEAM ID ${teamId}
+      <div class="card-label">
+        TEAM ID ${teamId}
         </div>
 
         <h2 class="card-title">
@@ -2959,16 +2960,85 @@ function teamPage() {
           Results, statistics, squad information and
           other details may be added in a future update.
         </p>
-
-        <a class="btn" href="#/standings"
-           style="margin-top:20px">
-          Back to standings
-        </a>
+        
+      <a class="btn" href="#/standings"
+         style="margin-top:20px">
+        Back to standings
+      </a>
       </div>
-    </section>
-  `;
+      </div>
+      </section>
+      `;
 }
 
+function initializeTeamPage() {
+  const parts = window.location.hash
+    .replace(/^#\/?/, "")
+    .split("/");
+
+  const teamId = Number(parts[1]);
+
+  if (!Number.isInteger(teamId) || teamId <= 0) {
+    return;
+  }
+
+  
+const container = document.getElementById(
+  "team-profile-content"
+);
+
+if (!container) return;
+
+container.innerHTML = `
+  <div class="football-message">
+    Loading club profile...
+  </div>
+`;
+
+fetch("/api/football?competition=PL&type=standings")
+  .then(response => {
+    if (!response.ok) {
+      throw new Error("Club data unavailable");
+    }
+    return response.json();
+  })
+  .then(data => {
+    if (document.getElementById("team-profile-content") !== container ||
+       window.location.hash !== `#/team/${teamId}`) {
+     return;
+    }
+    const rows = Array.isArray(data.standings)
+      ? data.standings
+      : [];
+
+    const club = rows.find(entry =>
+      Number(entry.team?.id) === teamId
+    );
+
+    if (!club) {
+      container.textContent =
+        "Club not found in Premier League standings.";
+      return;
+    }
+
+    container.textContent =
+      `${club.team.name} — ${club.points} points`;
+  })
+  .catch(error => {
+  if (
+    document.getElementById("team-profile-content") !== container ||
+    window.location.hash !== `#/team/${teamId}`
+  ) {
+    return;
+  }
+
+  console.error(error);
+
+  container.textContent =
+    "Unable to load club information.";
+  });
+}
+   
 const pages = {
   home,
   nominees,
@@ -3041,7 +3111,10 @@ function render() {
   if (route === "standings") {
     initializeStandingsPage();
   }
-
+   
+  if (route === "team") {
+    initializeTeamPage();
+  }
   window.scrollTo({
     top: 0,
     behavior: "instant"
