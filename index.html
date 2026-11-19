@@ -2995,7 +2995,7 @@ container.innerHTML = `
   </div>
 `;
 
-fetch("/api/football?competition=PL&type=standings")
+fetch("/api/football-preview?competition=PL&type=standings")
   .then(response => {
     if (!response.ok) {
       throw new Error("Club data unavailable");
