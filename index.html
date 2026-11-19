@@ -3026,7 +3026,13 @@ container.innerHTML = `
   </div>
 `;
 
-fetch(`/api/football-preview?competition=${teamCompetition}&type=standings`)
+const clubApiPath =
+  window.location.hostname === "www.ballonenbois.com" ||
+  window.location.hostname === "ballonenbois.com"
+    ? "/api/football"
+    : "/api/football-preview";
+
+fetch(`${clubApiPath}?competition=${teamCompetition}&type=standings`)
   .then(response => {
     if (!response.ok) {
       throw new Error("Club data unavailable");
@@ -3046,11 +3052,11 @@ fetch(`/api/football-preview?competition=${teamCompetition}&type=standings`)
       Number(entry.team?.id) === teamId
     );
 
-    if (!club) {
-      container.textContent =
-        "Club not found in Premier League standings.";
-      return;
-    }
+     if (!club) {
+     container.textContent =
+       "Club not found in the selected league standings.";
+     return;
+   }
 
     
 const team = club.team || {};
