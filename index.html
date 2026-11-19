@@ -2923,7 +2923,7 @@ function teamPage() {
     .replace(/^#\//, "")
     .split("/");
 
-  const teamId = Number(parts[1]);
+  const teamId = Number(parts[1]?.split("?")[0]);
 
   if (!Number.isInteger(teamId) || teamId <= 0) {
     return pagehead(
@@ -2976,7 +2976,7 @@ function initializeTeamPage() {
     .replace(/^#\/?/, "")
     .split("/");
 
-  const teamId = Number(parts[1]);
+  const teamId = Number(parts[1]?.split("?")[0]);
 
   if (!Number.isInteger(teamId) || teamId <= 0) {
     return;
