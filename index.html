@@ -3021,8 +3021,101 @@ fetch("/api/football-preview?competition=PL&type=standings")
       return;
     }
 
-    container.textContent =
-      `${club.team.name} — ${club.points} points`;
+    
+const team = club.team || {};
+
+const teamName = escapeHTML(
+  team.name || "Unknown club"
+);
+
+const crest = team.crest || "";
+
+const stats = [
+  ["League position", club.position],
+  ["Points", club.points],
+  ["Matches played", club.played_games],
+  ["Wins", club.won],
+  ["Draws", club.drawn],
+  ["Losses", club.lost],
+  ["Goals scored", club.goals_for],
+  ["Goals conceded", club.goals_against],
+  ["Goal difference", club.goal_difference]
+];
+
+container.innerHTML = `
+  <div class="card" style="padding:30px">
+
+    <div class="card-label">
+      PREMIER LEAGUE · 2026–27
+    </div>
+
+    <div style="
+      display:flex;
+      align-items:center;
+      gap:24px;
+      margin:24px 0;
+      flex-wrap:wrap;
+    ">
+      ${crest ? `
+        <img
+          src="${escapeHTML(crest)}"
+          alt="${teamName} crest"
+          style="
+            width:90px;
+            height:90px;
+            object-fit:contain;
+          "
+        >
+      ` : ""}
+
+      <h2 class="card-title"
+          style="margin:0">
+        ${teamName}
+      </h2>
+    </div>
+
+    <div style="
+      display:grid;
+      grid-template-columns:
+        repeat(auto-fit,minmax(140px,1fr));
+      gap:12px;
+      margin-top:24px;
+    ">
+      ${stats.map(([label, value]) => `
+        <div style="
+          background:#f5cf38;
+          color:#111;
+          padding:18px;
+          border-radius:4px;
+          text-align:center;
+        ">
+          <div style="
+            font-size:28px;
+            font-weight:800;
+          ">
+            ${escapeHTML(String(value ?? "—"))}
+          </div>
+
+          <div style="
+            font-size:12px;
+            font-weight:700;
+            margin-top:8px;
+          ">
+            ${escapeHTML(label)}
+          </div>
+        </div>
+      `).join("")}
+    </div>
+
+    <a class="btn"
+       href="#/standings"
+       style="margin-top:24px">
+      Back to standings
+    </a>
+
+  </div>
+`;
+
   })
   .catch(error => {
   if (
