@@ -2767,9 +2767,15 @@ async function loadStandings() {
   }
 
   try {
-    const response = await fetch(
-      `/api/football?${params}`
-    );
+    const standingsApiPath =
+     window.location.hostname === "www.ballonenbois.com" ||
+     window.location.hostname === "ballonenbois.com"
+       ? "/api/football"
+       : "/api/football-preview";
+   
+   const response = await fetch(
+     `${standingsApiPath}?${params}`
+   );
 
     if (!response.ok) {
       throw new Error(
