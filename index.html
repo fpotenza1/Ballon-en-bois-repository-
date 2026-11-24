@@ -1889,7 +1889,7 @@ function footballMatchHTML(match) {
 
         <div class="match-teams">
          <a class="match-team"            
-         href="${Number.isInteger(Number(home.provider_id)) && Number(home.provider_id) > 0 ? `#/team/${Number(home.provider_id)}` : '#/football'}"
+         href="${Number.isInteger(Number(home.provider_id)) && Number(home.provider_id) > 0 ? `#/team/${Number(home.provider_id)}?competition=${footballCompetition}` : '#/football'}"
             title="View ${escapeHTML(footballTeamName(home))} team profile">
            ${footballTeamBadge(home)}
            <span class="team-name">
@@ -1897,7 +1897,7 @@ function footballMatchHTML(match) {
            </span>
          </a>          
          <a class="match-team"            
-         href="${Number.isInteger(Number(away.provider_id)) && Number(away.provider_id) > 0 ? `#/team/${Number(away.provider_id)}` : '#/football'}"
+         href="${Number.isInteger(Number(away.provider_id)) && Number(away.provider_id) > 0 ? `#/team/${Number(away.provider_id)}?competition=${footballCompetition}` : '#/football'}"
             title="View ${escapeHTML(footballTeamName(away))} team profile">
            ${footballTeamBadge(away)}
            <span class="team-name">
@@ -2297,9 +2297,15 @@ async function loadFootballMatchdays() {
       type: "matchdays"
     });
 
-    const response = await fetch(
-      `/api/football?${params}`
-    );
+    const footballApiPath =
+     window.location.hostname === "www.ballonenbois.com" ||
+     window.location.hostname === "ballonenbois.com"
+       ? "/api/football"
+       : "/api/football-preview";
+   
+   const response = await fetch(
+     `${footballApiPath}?${params}`
+   );
 
     if (!response.ok) {
       throw new Error(
@@ -2388,9 +2394,15 @@ async function loadFootballData() {
   }
 
   try {
-    const response = await fetch(
-      `/api/football?${params}`
-    );
+    const footballApiPath =
+     window.location.hostname === "www.ballonenbois.com" ||
+     window.location.hostname === "ballonenbois.com"
+       ? "/api/football"
+       : "/api/football-preview";
+   
+   const response = await fetch(
+     `${footballApiPath}?${params}`
+   );
 
     if (!response.ok) {
       throw new Error(
@@ -2694,7 +2706,7 @@ function standingsTableHTML(data) {
 
                 <td>                  
                   <a class="standings-club"
-                  href="${Number.isInteger(Number(team.id)) && Number(team.id) > 0 ? `#/team/${Number(team.id)}` : '#/standings'}"
+                  href="${Number.isInteger(Number(team.id)) && Number(team.id) > 0 ? `#/team/${Number(team.id)}?competition=${standingsCompetition}` : '#/standings'}"
                      title="View ${escapeHTML(team.short_name || team.name || 'Unknown club')} team profile">                  
                     ${standingsCrest(team)}
                   
@@ -2767,9 +2779,15 @@ async function loadStandings() {
   }
 
   try {
-    const response = await fetch(
-      `/api/football?${params}`
-    );
+    const standingsApiPath =
+     window.location.hostname === "www.ballonenbois.com" ||
+     window.location.hostname === "ballonenbois.com"
+       ? "/api/football"
+       : "/api/football-preview";
+   
+   const response = await fetch(
+     `${standingsApiPath}?${params}`
+   );
 
     if (!response.ok) {
       throw new Error(
