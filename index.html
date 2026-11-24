@@ -1889,7 +1889,7 @@ function footballMatchHTML(match) {
 
         <div class="match-teams">
          <a class="match-team"            
-         href="${Number.isInteger(Number(home.provider_id)) && Number(home.provider_id) > 0 ? `#/team/${Number(home.provider_id)}` : '#/football'}"
+         href="${Number.isInteger(Number(home.provider_id)) && Number(home.provider_id) > 0 ? `#/team/${Number(home.provider_id)}?competition=${footballCompetition}` : '#/football'}"
             title="View ${escapeHTML(footballTeamName(home))} team profile">
            ${footballTeamBadge(home)}
            <span class="team-name">
@@ -1897,7 +1897,7 @@ function footballMatchHTML(match) {
            </span>
          </a>          
          <a class="match-team"            
-         href="${Number.isInteger(Number(away.provider_id)) && Number(away.provider_id) > 0 ? `#/team/${Number(away.provider_id)}` : '#/football'}"
+         href="${Number.isInteger(Number(away.provider_id)) && Number(away.provider_id) > 0 ? `#/team/${Number(away.provider_id)}?competition=${footballCompetition}` : '#/football'}"
             title="View ${escapeHTML(footballTeamName(away))} team profile">
            ${footballTeamBadge(away)}
            <span class="team-name">
@@ -2297,9 +2297,15 @@ async function loadFootballMatchdays() {
       type: "matchdays"
     });
 
-    const response = await fetch(
-      `/api/football?${params}`
-    );
+    const footballApiPath =
+     window.location.hostname === "www.ballonenbois.com" ||
+     window.location.hostname === "ballonenbois.com"
+       ? "/api/football"
+       : "/api/football-preview";
+   
+   const response = await fetch(
+     `${footballApiPath}?${params}`
+   );
 
     if (!response.ok) {
       throw new Error(
@@ -2388,9 +2394,15 @@ async function loadFootballData() {
   }
 
   try {
-    const response = await fetch(
-      `/api/football?${params}`
-    );
+    const footballApiPath =
+     window.location.hostname === "www.ballonenbois.com" ||
+     window.location.hostname === "ballonenbois.com"
+       ? "/api/football"
+       : "/api/football-preview";
+   
+   const response = await fetch(
+     `${footballApiPath}?${params}`
+   );
 
     if (!response.ok) {
       throw new Error(
