@@ -2852,6 +2852,24 @@ function initializeStandingsPage() {
 
   if (!selector) return;
 
+   const routeParams = new URLSearchParams(
+     window.location.hash.split("?")[1] || ""
+   );
+   
+   const requestedCompetition = routeParams.get("competition");
+   
+   if (
+     requestedCompetition &&
+     standingsCompetitions.some(
+       ([code]) => code === requestedCompetition
+     )
+   ) {
+     standingsCompetition = requestedCompetition;
+     standingsSeason = null;
+   }
+   
+   selector.value = standingsCompetition;
+
   selector.addEventListener("change", event => {
     standingsCompetition = event.target.value;
     standingsSeason = null;
@@ -3147,10 +3165,10 @@ container.innerHTML = `
     </div>
 
     <a class="btn"
-       href="#/standings"
-       style="margin-top:24px">
-      Back to standings
-    </a>
+      href="#/standings?competition=${teamCompetition}"
+      style="margin-top:24px">
+     Back to standings
+   </a>
 
   </div>
 `;
