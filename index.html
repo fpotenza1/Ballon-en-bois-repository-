@@ -2694,7 +2694,7 @@ function standingsTableHTML(data) {
 
                 <td>                  
                   <a class="standings-club"
-                  href="${Number.isInteger(Number(team.id)) && Number(team.id) > 0 ? `#/team/${Number(team.id)}` : '#/standings'}"
+                  href="${Number.isInteger(Number(team.id)) && Number(team.id) > 0 ? `#/team/${Number(team.id)}?competition=${standingsCompetition}` : '#/standings'}"
                      title="View ${escapeHTML(team.short_name || team.name || 'Unknown club')} team profile">                  
                     ${standingsCrest(team)}
                   
